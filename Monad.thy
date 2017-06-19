@@ -47,15 +47,15 @@ translations
   "_do_block (_do_final e)" \<rightharpoonup> "e"
 
 term 0 (**)
-lemma bind_assoc[simp]:
+lemma bind_assoc:
   "(s \<bind> k0) \<bind> k1 = s \<bind> (\<lambda>a. k0 a \<bind> k1)"
   unfolding bind_def by (auto split: prod.split)
 
-lemma left_identity[simp]:
+lemma left_identity:
   "\<langle>v\<rangle> \<bind> k = k v"
   unfolding return_def bind_def by simp
 
-lemma right_identity[simp]:
+lemma right_identity:
   "s \<bind> return = s"
   unfolding return_def bind_def by simp
 end
