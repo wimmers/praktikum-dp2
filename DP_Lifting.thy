@@ -71,7 +71,7 @@ primrec map\<^sub>T' :: "('a =='M\<Longrightarrow>'b) \<Rightarrow> 'a list =='M
   "(map\<^sub>T' f) [] = \<langle>[]\<rangle>"
 | "(map\<^sub>T' f) (x#xs) = \<langle>Cons\<^sub>T\<rangle> . (\<langle>f\<rangle> . \<langle>x\<rangle>) . ((map\<^sub>T' f) xs)"
 lemma
-  "(map\<^sub>T' f) (x#xs) = \<langle>Cons\<^sub>T\<rangle> . (\<langle>f\<rangle> . \<langle>x\<rangle>) . (\<langle>map\<^sub>T' f\<rangle> . \<langle>xs\<rangle>)" unfolding map\<^sub>T'.simps(2) fun_app_lifted_def return_bind ..
+  "(map\<^sub>T' f) (x#xs) = \<langle>Cons\<^sub>T\<rangle> . (\<langle>f\<rangle> . \<langle>x\<rangle>) . (\<langle>map\<^sub>T' f\<rangle> . \<langle>xs\<rangle>)" unfolding map\<^sub>T'.simps(2) fun_app_lifted_def left_identity ..
 
 definition map\<^sub>T :: "('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b list" where
   "map\<^sub>T \<equiv> lift_1arg map\<^sub>T'"
@@ -80,7 +80,7 @@ primrec fold\<^sub>T' :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b)
   "(fold\<^sub>T' f) [] = \<langle>id\<^sub>T\<rangle>"
 | "(fold\<^sub>T' f) (x#xs) = \<langle>fcomp\<^sub>T\<rangle> . (\<langle>f\<rangle> . \<langle>x\<rangle>) . ((fold\<^sub>T' f) xs)"
 lemma
-  "(fold\<^sub>T' f) (x#xs) = \<langle>fcomp\<^sub>T\<rangle> . (\<langle>f\<rangle> . \<langle>x\<rangle>) . (\<langle>fold\<^sub>T' f\<rangle> . \<langle>xs\<rangle>)" unfolding fold\<^sub>T'.simps(2) fun_app_lifted_def return_bind ..
+  "(fold\<^sub>T' f) (x#xs) = \<langle>fcomp\<^sub>T\<rangle> . (\<langle>f\<rangle> . \<langle>x\<rangle>) . (\<langle>fold\<^sub>T' f\<rangle> . \<langle>xs\<rangle>)" unfolding fold\<^sub>T'.simps(2) fun_app_lifted_def left_identity ..
 
 definition fold\<^sub>T :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b" where
   "fold\<^sub>T \<equiv> lift_1arg fold\<^sub>T'"
