@@ -10,6 +10,7 @@ term 0 (**)
 (* Basics *)
 definition fun_app_lifted :: "('M,'a =='M\<Longrightarrow> 'b) state \<Rightarrow> ('M,'a) state \<Rightarrow> ('M,'b) state" (infixl "." 999) where
   "f\<^sub>T . x\<^sub>T \<equiv> do { f \<leftarrow> f\<^sub>T; x \<leftarrow> x\<^sub>T; f x }"
+term 0 (**)
 
 definition checkmem :: "'param \<Rightarrow> ('param \<rightharpoonup> 'result, 'result) state \<Rightarrow> ('param \<rightharpoonup> 'result, 'result) state" where
   "checkmem param calc \<equiv> do {
@@ -67,16 +68,22 @@ definition case_list\<^sub>T :: "'b =='M\<Longrightarrow> ('a =='M\<Longrightarr
   "case_list\<^sub>T \<equiv> \<lambda>ifNil. \<langle>\<lambda>ifCons. \<langle>\<lambda>val. case_list (unlift_0arg \<langle>ifNil\<rangle>) (unlift_2arg \<langle>ifCons\<rangle>) val\<rangle>\<rangle>"
 
 primrec map\<^sub>T' :: "('a =='M\<Longrightarrow>'b) \<Rightarrow> 'a list =='M\<Longrightarrow> 'b list" where
-  "map\<^sub>T' f [] = \<langle>[]\<rangle>"
-| "map\<^sub>T' f (x#xs) = \<langle>Cons\<^sub>T\<rangle> . (f x) . (map\<^sub>T' f xs)"
+  "(map\<^sub>T' f) [] = \<langle>[]\<rangle>"
+| "(map\<^sub>T' f) (x#xs) = \<langle>Cons\<^sub>T\<rangle> . (\<langle>f\<rangle> . \<langle>x\<rangle>) . ((map\<^sub>T' f) xs)"
 definition map\<^sub>T :: "('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b list" where
   "map\<^sub>T \<equiv> lift_1arg map\<^sub>T'"
 
 primrec fold\<^sub>T' :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b) \<Rightarrow> 'a list =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b" where
-  "fold\<^sub>T' f [] = \<langle>id\<^sub>T\<rangle>"
-| "fold\<^sub>T' f (x#xs) = \<langle>fcomp\<^sub>T\<rangle> . (f x) . (fold\<^sub>T' f xs)"
+  "(fold\<^sub>T' f) [] = \<langle>id\<^sub>T\<rangle>"
+| "(fold\<^sub>T' f) (x#xs) = \<langle>fcomp\<^sub>T\<rangle> . (\<langle>f\<rangle> . \<langle>x\<rangle>) . ((fold\<^sub>T' f) xs)"
 definition fold\<^sub>T :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b" where
   "fold\<^sub>T \<equiv> lift_1arg fold\<^sub>T'"
+
+lemma "(map\<^sub>T' f) (x#xs) = \<langle>Cons\<^sub>T\<rangle> . (\<langle>f\<rangle> . \<langle>x\<rangle>) . (\<langle>map\<^sub>T' f\<rangle> . \<langle>xs\<rangle>)"
+  unfolding map\<^sub>T'.simps(2) fun_app_lifted_def return_bind ..
+
+lemma "(fold\<^sub>T' f) (x#xs) = \<langle>fcomp\<^sub>T\<rangle> . (\<langle>f\<rangle> . \<langle>x\<rangle>) . (\<langle>fold\<^sub>T' f\<rangle> . \<langle>xs\<rangle>)"
+  unfolding fold\<^sub>T'.simps(2) fun_app_lifted_def return_bind ..
 term 0 (**)
 
 (* Option *)

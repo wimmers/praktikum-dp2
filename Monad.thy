@@ -51,4 +51,7 @@ lemma bind_assoc[simp]:
   "(s \<bind> k0) \<bind> k1 = s \<bind> (\<lambda>a. k0 a \<bind> k1)"
   unfolding bind_def by (auto split: prod.split)
 
+lemma return_bind[simp]:
+  "\<langle>v\<rangle> \<bind> k = k v"
+  unfolding return_def bind_def by simp
 end
