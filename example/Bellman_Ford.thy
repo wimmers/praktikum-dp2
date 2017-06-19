@@ -25,7 +25,7 @@ fun bf :: "nat\<times>nat \<Rightarrow> int" where
 thm bf.simps
 term 0 (**)
 
-fun bf\<^sub>T :: "nat\<times>nat \<Rightarrow> (nat\<times>nat \<rightharpoonup> int, int) state" where
+fun bf\<^sub>T :: "nat\<times>nat \<Rightarrow>\<^sub>T int" where
   "bf\<^sub>T$ (0, j) =CHECKMEM= \<langle>W 0 j\<rangle>"
 | "bf\<^sub>T$ (Suc k, j) =CHECKMEM=
     \<langle>fold\<^sub>T\<rangle>

@@ -84,7 +84,7 @@ term 0 (**)
 lemma consistentS_return_transfer[transfer_rule]:
   "(op = ===> consistentS dp) (\<lambda>x. x) return"
   unfolding rel_fun_def return_def by (fastforce intro: consistentS_intro)
-lemmas consistentS_return = consistentS_return_transfer[unfolded rel_fun_def id_def, rule_format]
+lemmas consistentS_return = consistentS_return_transfer[unfolded rel_fun_def, rule_format]
 term 0 (**)
 
 (* Low level operators *)
