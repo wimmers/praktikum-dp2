@@ -54,6 +54,9 @@ definition If\<^sub>T :: "bool =='M\<Longrightarrow> 'a =='M\<Longrightarrow> 'a
 thm fcomp_def
 definition fcomp\<^sub>T :: "('b =='M\<Longrightarrow> 'c) =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'c)" where
   "fcomp\<^sub>T \<equiv> \<lambda>g. \<langle>\<lambda>f. \<langle>\<lambda>x. \<langle>g\<rangle> . (\<langle>f\<rangle>.\<langle>x\<rangle>) \<rangle>\<rangle>"
+
+definition id\<^sub>T :: "'a =='M\<Longrightarrow> 'a" where
+  "id\<^sub>T \<equiv> \<lambda>x. \<langle>x\<rangle>"
 term 0 (**)
 
 (* List *)
@@ -70,7 +73,7 @@ definition map\<^sub>T :: "('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> '
   "map\<^sub>T \<equiv> lift_1arg map\<^sub>T'"
 
 primrec fold\<^sub>T' :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b) \<Rightarrow> 'a list =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b" where
-  "fold\<^sub>T' f [] = \<langle>return\<rangle>"
+  "fold\<^sub>T' f [] = \<langle>id\<^sub>T\<rangle>"
 | "fold\<^sub>T' f (x#xs) = \<langle>fcomp\<^sub>T\<rangle> . (f x) . (fold\<^sub>T' f xs)"
 definition fold\<^sub>T :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b" where
   "fold\<^sub>T \<equiv> lift_1arg fold\<^sub>T'"
