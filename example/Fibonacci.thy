@@ -51,7 +51,7 @@ lemma "consistentDP fib fib\<^sub>T"
     done
   subgoal
     
-  done
+  oops
 term 0 (**)
 
 end

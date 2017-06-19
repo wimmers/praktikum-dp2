@@ -12,7 +12,7 @@ definition consistentM :: "('param \<Rightarrow> 'result) \<Rightarrow> ('param 
 term 0 (**)
   
 definition consistentS :: "('param \<Rightarrow> 'result) \<Rightarrow> 'a \<Rightarrow> ('param \<rightharpoonup> 'result, 'a) state \<Rightarrow> bool" where
-  "consistentS dp v s \<equiv> \<forall>M. consistentM dp M \<longrightarrow> (case s M of (v', M') \<Rightarrow> v = v' \<and> consistentM dp M')"
+  "consistentS dp v s \<equiv> \<forall>M. consistentM dp M \<longrightarrow> (case runState s M of (v', M') \<Rightarrow> v = v' \<and> consistentM dp M')"
 term 0 (**)
 
 (* Consistency predicates for functions *)
@@ -43,14 +43,14 @@ term 0 (**)
 
 (* consistentS *)
 lemma consistentS_intro:
-  assumes "\<And>M v' M'. \<lbrakk>consistentM dp M; v\<^sub>T M = (v', M')\<rbrakk> \<Longrightarrow> v = v' \<and> consistentM dp M'"
+  assumes "\<And>M v' M'. \<lbrakk>consistentM dp M; runState v\<^sub>T M = (v', M')\<rbrakk> \<Longrightarrow> v = v' \<and> consistentM dp M'"
   shows "consistentS dp v v\<^sub>T"
   using assms unfolding consistentS_def by blast
 term 0 (**)
 
 lemma consistentS_elim:
   assumes "consistentS dp v v\<^sub>T" "consistentM dp M"
-  obtains v' M' where "v\<^sub>T M = (v', M')" "v = v'" "consistentM dp M'"
+  obtains v' M' where "runState v\<^sub>T M = (v', M')" "v = v'" "consistentM dp M'"
   using assms unfolding consistentS_def by blast
 term 0 (**)
 
@@ -73,10 +73,6 @@ lemma consistentS_1arg_intro:
   shows "consistentS_1arg dp f f\<^sub>T"
   using assms unfolding consistentS_1arg_def ..
 
-lemma consistentS_1arg_elim:
-  assumes "consistentS_1arg dp f f\<^sub>T"
-term 0 (**
-
 (* consistentDP *)
 lemma consistentDP_intro:
   assumes "\<And>param. consistentS dp (dp param) (dp\<^sub>T param)"
@@ -91,11 +87,7 @@ lemma consistentS_return_transfer[transfer_rule]:
 lemmas consistentS_return = consistentS_return_transfer[unfolded rel_fun_def id_def, rule_format]
 term 0 (**)
 
-lemma consistentS_1arg_transfer[transfer_rule]:
-  "(consistentS_1arg dp)"
-
-term 0 (**)
-(* Low level operators *
+(* Low level operators *)
 lemma consistentM_upd:
   assumes "consistentM dp M" "v = dp param"
   shows "consistentM dp (M(param\<mapsto>v))"
@@ -104,20 +96,21 @@ term 0 (**)
 
 lemma consistentS_get:
   assumes "\<And>M. consistentM dp M \<Longrightarrow> consistentS dp v (sf M)"
-  shows "consistentS dp v (get \<circ>\<rightarrow> sf)"
-  using assms unfolding get_def by (fastforce intro: consistentS_intro elim: consistentS_elim)
+  shows "consistentS dp v (get \<bind> sf)"
+  using assms unfolding get_def bind_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
+  
 term 0 (**)
 
 lemma consistentS_put:
   assumes "consistentS dp v sf" "consistentM dp M"
-  shows "consistentS dp v (put M \<circ>> sf)"
-  using assms unfolding put_def by (fastforce intro: consistentS_intro elim: consistentS_elim)
+  shows "consistentS dp v (put M \<then> sf)"
+  using assms unfolding put_def bind_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
 term 0 (**)
 
 lemma consistentS_app:
   assumes "consistentS dp v s" "consistentS dp v' (sf v)"
-  shows "consistentS dp v' (s \<circ>\<rightarrow> sf)"
-  using assms by (fastforce intro: consistentS_intro elim: consistentS_elim)
+  shows "consistentS dp v' (s \<bind> sf)"
+  using assms unfolding bind_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
 term 0 (**)
 
 lemma consistentS_checkmem:
@@ -126,8 +119,6 @@ lemma consistentS_checkmem:
   using assms unfolding checkmem_def by (fastforce intro: consistentS_return consistentS_get
       consistentS_put consistentS_app consistentM_upd elim: consistentM_elim split: option.splits)
 term 0 (**)
-
-(* List *)
 
 end
 

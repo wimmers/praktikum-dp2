@@ -1,35 +1,25 @@
 theory DP_Lifting
-  imports Main "~~/src/HOL/Library/State_Monad" Fun_Def
+  imports Main "./Monad"
 begin
 
 (* Types *)
-type_synonym ('M,'a) state = "'M \<Rightarrow> ('a \<times> 'M)" ("_-\<langle>_\<rangle>" [1000,0] 0)
 type_synonym ('a,'M,'b) fun_lifted = "'a \<Rightarrow> ('M,'b) state" ("_ ==_\<Longrightarrow> _" [3,1000,2] 2)
 type_synonym ('a,'b) dpfun = "'a ==('a\<rightharpoonup>'b)\<Longrightarrow> 'b" (infixr "\<Rightarrow>\<^sub>T" 2)
 term 0 (**)
 
 (* Basics *)
-definition return :: "'a \<Rightarrow> ('M,'a) state" ("\<langle>_\<rangle>") where
-  "return a \<equiv> \<lambda>M. (a, M)"
-
-definition get :: "('M,'M) state" where
-  "get \<equiv> \<lambda>M. (M, M)"
-
-definition put :: "'M \<Rightarrow> 'M \<Rightarrow> 'M" where
-  "put M \<equiv> \<lambda>_. M"
-
 definition fun_app_lifted :: "('M,'a =='M\<Longrightarrow> 'b) state \<Rightarrow> ('M,'a) state \<Rightarrow> ('M,'b) state" (infixl "." 999) where
-  "f\<^sub>T . x\<^sub>T \<equiv> exec { f \<leftarrow> f\<^sub>T; x \<leftarrow> x\<^sub>T; f x }"
+  "f\<^sub>T . x\<^sub>T \<equiv> do { f \<leftarrow> f\<^sub>T; x \<leftarrow> x\<^sub>T; f x }"
 
 definition fcomp_lifted :: "('b =='M\<Longrightarrow> 'c) =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'c)" where
   "fcomp_lifted \<equiv> \<lambda>g. \<langle>\<lambda>f. \<langle>\<lambda>x. \<langle>g\<rangle> . (\<langle>f\<rangle>.\<langle>x\<rangle>) \<rangle>\<rangle>"
 
 definition checkmem :: "'param \<Rightarrow> ('param \<rightharpoonup> 'result, 'result) state \<Rightarrow> ('param \<rightharpoonup> 'result, 'result) state" where
-  "checkmem param calc \<equiv> exec {
+  "checkmem param calc \<equiv> do {
     M \<leftarrow> get;
     case M param of
       Some x \<Rightarrow> \<langle>x\<rangle>
-    | None \<Rightarrow> exec {
+    | None \<Rightarrow> do {
         x \<leftarrow> calc;
         M' \<leftarrow> get;
         put (M'(param\<mapsto>x));

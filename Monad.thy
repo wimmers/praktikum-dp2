@@ -5,7 +5,7 @@ begin
 datatype ('M, 'a) state = State (runState: "'M \<Rightarrow> 'a \<times> 'M")
 term 0 (**)
 
-definition return :: "'a \<Rightarrow> ('M, 'a) state" where
+definition return :: "'a \<Rightarrow> ('M, 'a) state" ("\<langle>_\<rangle>") where
   "return a \<equiv> State (\<lambda>M. (a, M))"
 term 0 (**)
 
@@ -17,6 +17,13 @@ abbreviation then_monad :: "('M, 'a) state \<Rightarrow> ('M, 'b) state \<Righta
   "s \<then> s' \<equiv> s \<bind> (\<lambda>_. s')"
 term 0 (**)
 
+definition get :: "('M, 'M) state" where
+  "get \<equiv> State (\<lambda>M. (M, M))"
+
+definition put :: "'M \<Rightarrow> ('M, unit) state" where
+  "put M \<equiv> State (\<lambda>_. ((), M))"
+term 0 (**)
+  
 nonterminal do_binds and do_bind
 syntax
   "_do_block" :: "do_binds \<Rightarrow> 'a" ("do {//(2  _)//}" [12] 62)
