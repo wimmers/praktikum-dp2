@@ -63,13 +63,13 @@ definition Cons\<^sub>T :: "'a =='M\<Longrightarrow> 'a list =='M\<Longrightarro
 definition case_list\<^sub>T :: "'b =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b" where
   "case_list\<^sub>T \<equiv> \<lambda>ifNil. \<langle>\<lambda>ifCons. \<langle>\<lambda>val. case_list (unlift_0arg \<langle>ifNil\<rangle>) (unlift_2arg \<langle>ifCons\<rangle>) val\<rangle>\<rangle>"
 
-primrec map\<^sub>T' :: "('a =='M\<Longrightarrow>'b) \<Rightarrow> ('a list =='M\<Longrightarrow> 'b list)" where
+primrec map\<^sub>T' :: "('a =='M\<Longrightarrow>'b) \<Rightarrow> 'a list =='M\<Longrightarrow> 'b list" where
   "map\<^sub>T' f [] = \<langle>[]\<rangle>"
 | "map\<^sub>T' f (x#xs) = \<langle>Cons\<^sub>T\<rangle> . (f x) . (map\<^sub>T' f xs)"
 definition map\<^sub>T :: "('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b list" where
   "map\<^sub>T \<equiv> lift_1arg map\<^sub>T'"
 
-primrec fold\<^sub>T' :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b) \<Rightarrow> ('a list =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b)" where
+primrec fold\<^sub>T' :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b) \<Rightarrow> 'a list =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b" where
   "fold\<^sub>T' f [] = \<langle>return\<rangle>"
 | "fold\<^sub>T' f (x#xs) = \<langle>fcomp\<^sub>T\<rangle> . (f x) . (fold\<^sub>T' f xs)"
 definition fold\<^sub>T :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b" where
