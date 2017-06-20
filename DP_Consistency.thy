@@ -19,24 +19,12 @@ definition consistentS :: "('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow
   "consistentS R v s \<equiv> \<forall>M. consistentM M \<longrightarrow> (case runState s M of (v', M') \<Rightarrow> R v v' \<and> consistentM M')"
 term 0 (**)
   
-  (* Consistency predicates for functions *)
-abbreviation R_' :: "'a \<Rightarrow> 'a \<Rightarrow> bool" where
-  "R_' \<equiv> op ="
-abbreviation R_3 :: "('a \<Rightarrow> 'b) \<Rightarrow> ('a ==_\<Longrightarrow> 'b) \<Rightarrow> bool" where
-  "R_3  \<equiv> R_' ===> consistentS R_'"
-abbreviation R_33 :: "('a \<Rightarrow> 'b \<Rightarrow> 'c) \<Rightarrow> ('a ==_\<Longrightarrow> 'b ==_\<Longrightarrow> 'c) \<Rightarrow> bool" where
-  "R_33 \<equiv> R_' ===> consistentS R_3"
-abbreviation R_333 :: "('a \<Rightarrow> 'b \<Rightarrow> 'c \<Rightarrow> 'd) \<Rightarrow> ('a ==_\<Longrightarrow> 'b ==_\<Longrightarrow> 'c==_\<Longrightarrow> 'd) \<Rightarrow> bool" where
-  "R_333 \<equiv> R_' ===> consistentS R_33"
-abbreviation R_q3p33 :: "(('a \<Rightarrow> 'b) \<Rightarrow> 'c \<Rightarrow> 'd) \<Rightarrow> (('a ==_\<Longrightarrow> 'b) ==_\<Longrightarrow> 'c ==_\<Longrightarrow> 'd) \<Rightarrow> bool" where
-  "R_q3p33 \<equiv> R_3 ===> consistentS R_3"
-abbreviation R_q33p333 :: "(('a \<Rightarrow> 'b \<Rightarrow> 'c) \<Rightarrow> 'd \<Rightarrow> 'e \<Rightarrow> 'f) \<Rightarrow> (('a ==_\<Longrightarrow> 'b ==_\<Longrightarrow> 'c) ==_\<Longrightarrow> 'd ==_\<Longrightarrow> 'e ==_\<Longrightarrow> 'f) \<Rightarrow> bool" where
-  "R_q33p333 \<equiv> R_33 ===> consistentS R_33"
-  
+abbreviation rel_fun_lifted :: "('a \<Rightarrow> 'c \<Rightarrow> bool) \<Rightarrow> ('b \<Rightarrow> 'd \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('c ==_\<Longrightarrow> 'd) \<Rightarrow> bool" (infixr "===>\<^sub>T" 55) where
+ "rel_fun_lifted R R' \<equiv> R ===> consistentS R'"
 term 0 (**)
   
 definition consistentDP :: "('param \<Rightarrow>\<^sub>T 'result) \<Rightarrow> bool" where
-  "consistentDP \<equiv> R_3 dp"
+  "consistentDP \<equiv> (op = ===>\<^sub>T op =) dp"
 term 0 (**)
   
   (* consistentM *)
@@ -67,7 +55,7 @@ term 0 (**)
   
   (* consistentDP *)
 lemma consistentDP_intro:
-  assumes "\<And>param. consistentS R_' (dp param) (dp\<^sub>T param)"
+  assumes "\<And>param. consistentS (op =) (dp param) (dp\<^sub>T param)"
   shows "consistentDP dp\<^sub>T"
   using assms unfolding consistentDP_def by blast
 term 0 (**)
@@ -100,14 +88,14 @@ lemma consistentS_put:
 term 0 (**)
   
 lemma consistentS_bind:
-  assumes "consistentS R_' v s" "consistentS R_' (f v) (sf v)"
-  shows "consistentS R_' (f v) (s \<bind> sf)"
+  assumes "consistentS op = v s" "consistentS R (f v) (sf v)"
+  shows "consistentS R (f v) (s \<bind> sf)"
   using assms unfolding bind_def rel_fun_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
 term 0 (**)
   
 lemma consistentS_checkmem:
-  assumes "consistentS R_' (dp param) s"
-  shows "consistentS R_' (dp param) (checkmem param s)"
+  assumes "consistentS op = (dp param) s"
+  shows "consistentS op = (dp param) (checkmem param s)"
   using assms unfolding checkmem_def
   by (fastforce intro: consistentS_return consistentS_get
       consistentS_put consistentS_bind consistentM_upd elim: consistentM_elim split: option.splits)
@@ -133,25 +121,55 @@ proof -
     } hence "consistentS R' (f x) (f\<^sub>T . x\<^sub>T)" by (blast intro: consistentS_intro)
   } thus ?thesis by blast
 qed
+lemmas fun_app_lifted_consistency = fun_app_lifted_transfer[unfolded rel_fun_def, rule_format]
+term 0 (**)
 
-lemma lift_'_transfer[transfer_rule]: "R_' x (lift_' x)"
+lemma lift_'_transfer[transfer_rule]: "(op =) x (lift_' x)"
   unfolding lift_'_def ..
 
-lemma lift_3_transfer[transfer_rule]: "R_3 f (lift_3 f)"
+lemma lift_3_transfer[transfer_rule]: "(op = ===>\<^sub>T op =) f (lift_3 f)"
   unfolding lift_3_def lift_'_def by transfer_prover
 
-lemma lift_33_transfer[transfer_rule]: "R_33 f (lift_33 f)"
+lemma lift_33_transfer[transfer_rule]: "(op = ===>\<^sub>T op = ===>\<^sub>T op =) f (lift_33 f)"
   unfolding lift_33_def lift_3_def lift_'_def by transfer_prover
 term 0 (**)
   
-lemma lift_Cons_transfer[transfer_rule]: "R_33 Cons Cons\<^sub>T"
+lemma Cons_transfer[transfer_rule]:
+  "(op = ===>\<^sub>T op = ===>\<^sub>T op =) Cons Cons\<^sub>T"
   unfolding Cons\<^sub>T_def by transfer_prover
 
+lemma unlift_'_transfer[transfer_rule]:
+  "(R ===> consistentS R) (\<lambda>x. x) unlift_'"
+  unfolding unlift_'_def by transfer_prover
 term 0 (**)
+  
+lemma unlift_3_transfer[transfer_rule]:
+  "((R0 ===>\<^sub>T R1) ===> (R0 ===> consistentS R1)) (\<lambda>f. f) unlift_3"
+  unfolding unlift_3_def by transfer_prover
+term 0 (**)
+
+lemma unlift_33_transfer[transfer_rule]:
+  "((R0 ===>\<^sub>T R1 ===>\<^sub>T R2) ===> (R0 ===> R1 ===> consistentS R2)) (\<lambda>f. f) unlift_33"
+  unfolding unlift_33_def by transfer_prover  
+term 0 (**)
+  
+lemma case_option_transfer[transfer_rule]:
+  "(op = ===>\<^sub>T (op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op =) case_option case_option\<^sub>T"
+  unfolding case_option\<^sub>T_def by transfer_prover
+
+lemma case_list_transfer[transfer_rule]:
+  "(op = ===>\<^sub>T (op = ===>\<^sub>T op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op =) case_list case_list\<^sub>T"
+  unfolding case_list\<^sub>T_def by transfer_prover
+
+lemma case_prod_transfer[transfer_rule]:
+  "((op = ===>\<^sub>T op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op =) case_prod case_prod\<^sub>T"
+  unfolding case_prod\<^sub>T_def by transfer_prover
+term 0 (**)
+
 lemma "R_q3p33 map map\<^sub>T"
 proof -
-  fix f f\<^sub>T assume "R_3 f f\<^sub>T"
-  have "consistentS R_' (map f xs) (map\<^sub>T' f\<^sub>T xs)" for xs
+  fix f f\<^sub>T assume "(op = ===>\<^sub>T op =) f f\<^sub>T"
+  have "consistentS (op =) (map f xs) (map\<^sub>T' f\<^sub>T xs)" for xs
     apply (induction xs)
      apply (unfold list.map map\<^sub>T'.simps)
     subgoal by transfer_prover
@@ -166,7 +184,6 @@ proof -
             prefer 6 apply transfer_step
            apply transfer_step
           apply transfer_step
-      term lfp
       oops
 end
 end

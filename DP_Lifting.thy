@@ -44,12 +44,12 @@ definition lift_33 :: "('a \<Rightarrow> 'b \<Rightarrow> 'c) \<Rightarrow> ('a 
 definition lift_333 :: "('a \<Rightarrow> 'b \<Rightarrow> 'c \<Rightarrow> 'd) \<Rightarrow> ('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'c =='M\<Longrightarrow> 'd)" where
   "lift_333 f \<equiv> \<lambda>v. \<langle>lift_33 (f v)\<rangle>"
   
-definition unlift_0arg :: "('M, 'a) state \<Rightarrow> ('M, 'a) state" where
-  "unlift_0arg x\<^sub>T \<equiv> x\<^sub>T"
-definition unlift_1arg :: "('M, 'a =='M\<Longrightarrow> 'b) state \<Rightarrow> ('a \<Rightarrow> ('M, 'b) state)" where
-  "unlift_1arg f\<^sub>T \<equiv> \<lambda>v. unlift_0arg (f\<^sub>T . \<langle>v\<rangle>)"
-definition unlift_2arg :: "('M, 'a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'c) state \<Rightarrow> ('a \<Rightarrow> 'b \<Rightarrow> ('M, 'c) state)" where
-  "unlift_2arg f\<^sub>T \<equiv> \<lambda>v. unlift_1arg (f\<^sub>T . \<langle>v\<rangle>)"
+definition unlift_' :: "'a \<Rightarrow> ('M, 'a) state" where
+  "unlift_' x \<equiv> \<langle>x\<rangle>"
+definition unlift_3 :: "('a =='M\<Longrightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> ('M, 'b) state)" where
+  "unlift_3 f \<equiv> \<lambda>v0. \<langle>f\<rangle>.\<langle>v0\<rangle>"
+definition unlift_33 :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'c) \<Rightarrow> ('a \<Rightarrow> 'b \<Rightarrow> ('M, 'c) state)" where
+  "unlift_33 f \<equiv> \<lambda>v0 v1. \<langle>f\<rangle>.\<langle>v0\<rangle>.\<langle>v1\<rangle>"
   
 term 0 (**)
   
@@ -70,7 +70,7 @@ definition Cons\<^sub>T :: "'a =='M\<Longrightarrow> 'a list =='M\<Longrightarro
   "Cons\<^sub>T \<equiv> lift_33 Cons"
   
 definition case_list\<^sub>T :: "'b =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b" where
-  "case_list\<^sub>T \<equiv> \<lambda>ifNil. \<langle>\<lambda>ifCons. \<langle>\<lambda>val. case_list (unlift_0arg \<langle>ifNil\<rangle>) (unlift_2arg \<langle>ifCons\<rangle>) val\<rangle>\<rangle>"
+  "case_list\<^sub>T \<equiv> \<lambda>ifNil. \<langle>\<lambda>ifCons. \<langle>\<lambda>val. case_list (unlift_' ifNil) (unlift_33 ifCons) val\<rangle>\<rangle>"
   
 primrec map\<^sub>T' :: "('a =='M\<Longrightarrow>'b) \<Rightarrow> 'a list =='M\<Longrightarrow> 'b list" where
   "(map\<^sub>T' f) [] = \<langle>[]\<rangle>"
@@ -97,7 +97,7 @@ definition Some\<^sub>T :: "'a =='M\<Longrightarrow> 'a option" where
   "Some\<^sub>T \<equiv> lift_3 Some"
   
 definition case_option\<^sub>T :: "'b =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a option =='M\<Longrightarrow> 'b" where
-  "case_option\<^sub>T \<equiv> \<lambda>ifNone. \<langle>\<lambda>ifSome. \<langle>\<lambda>val. case_option (unlift_0arg \<langle>ifNone\<rangle>) (unlift_1arg \<langle>ifSome\<rangle>) val\<rangle>\<rangle>"
+  "case_option\<^sub>T \<equiv> \<lambda>ifNone. \<langle>\<lambda>ifSome. \<langle>\<lambda>val. case_option (unlift_' ifNone) (unlift_3 ifSome) val\<rangle>\<rangle>"
 term 0 (**)
   
   (* Prod *)
@@ -105,7 +105,7 @@ definition Pair\<^sub>T :: "'a0 =='M\<Longrightarrow> 'a1 =='M\<Longrightarrow> 
   "Pair\<^sub>T \<equiv> lift_33 Pair"
   
 definition case_prod\<^sub>T :: "('a0 =='M\<Longrightarrow> 'a1 =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> ('a0\<times>'a1) =='M\<Longrightarrow> 'b" where
-  "case_prod\<^sub>T \<equiv> \<lambda>ifProd. \<langle>\<lambda>val. case_prod (unlift_2arg \<langle>ifProd\<rangle>) val\<rangle>"
+  "case_prod\<^sub>T \<equiv> \<lambda>ifProd. \<langle>\<lambda>val. case_prod (unlift_33 ifProd) val\<rangle>"
   
 term "\<langle>case_prod\<^sub>T\<rangle> . \<langle>\<lambda>v0. \<langle>\<lambda>v1. \<langle>v0+v1\<rangle>\<rangle>\<rangle> . (\<langle>Pair\<^sub>T\<rangle> . \<langle>0\<rangle> . \<langle>0::int\<rangle>)"
 term 0 (**)
