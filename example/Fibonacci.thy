@@ -40,17 +40,7 @@ fun fib\<^sub>T :: "nat \<Rightarrow>\<^sub>T int option" where
 term 0 (**)
 
 lemma "consistentDP fib fib\<^sub>T"
-  apply (rule consistentDP_intro, induct_tac rule: fib\<^sub>T.induct; unfold fib\<^sub>T.simps, rule consistentS_checkmem, unfold fib.simps)
-  subgoal
-    apply (rule consistentS_return)
-    subgoal by (rule refl)
-    done
-  subgoal
-    apply (rule consistentS_return)
-    subgoal by (rule refl)
-    done
-  subgoal
-    
+
   oops
 term 0 (**)
 
