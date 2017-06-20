@@ -58,8 +58,8 @@ definition If\<^sub>T :: "bool =='M\<Longrightarrow> 'a =='M\<Longrightarrow> 'a
   "If\<^sub>T \<equiv> lift_333 If"
   
 thm fcomp_def
-definition fcomp\<^sub>T :: "('b =='M\<Longrightarrow> 'c) =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'c)" where
-  "fcomp\<^sub>T \<equiv> \<lambda>g. \<langle>\<lambda>f. \<langle>\<lambda>x. \<langle>g\<rangle> . (\<langle>f\<rangle>.\<langle>x\<rangle>) \<rangle>\<rangle>"
+definition comp\<^sub>T :: "('b =='M\<Longrightarrow> 'c) =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'c)" where
+  "comp\<^sub>T \<equiv> \<lambda>g. \<langle>\<lambda>f. \<langle>\<lambda>x. \<langle>g\<rangle> . (\<langle>f\<rangle>.\<langle>x\<rangle>) \<rangle>\<rangle>"
   
 definition id\<^sub>T :: "'a =='M\<Longrightarrow> 'a" where
   "id\<^sub>T \<equiv> \<lambda>x. \<langle>x\<rangle>"
@@ -83,9 +83,9 @@ definition map\<^sub>T :: "('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> '
   
 primrec fold\<^sub>T' :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b) \<Rightarrow> 'a list =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b" where
   "(fold\<^sub>T' f) [] = \<langle>id\<^sub>T\<rangle>"
-| "(fold\<^sub>T' f) (x#xs) = \<langle>fcomp\<^sub>T\<rangle> . (\<langle>f\<rangle> . \<langle>x\<rangle>) . ((fold\<^sub>T' f) xs)"
+| "(fold\<^sub>T' f) (x#xs) = \<langle>comp\<^sub>T\<rangle> . (\<langle>f\<rangle> . \<langle>x\<rangle>) . ((fold\<^sub>T' f) xs)"
 lemma
-  "(fold\<^sub>T' f) (x#xs) = \<langle>fcomp\<^sub>T\<rangle> . (\<langle>f\<rangle> . \<langle>x\<rangle>) . (\<langle>fold\<^sub>T' f\<rangle> . \<langle>xs\<rangle>)" unfolding fold\<^sub>T'.simps(2) fun_app_lifted_def left_identity ..
+  "(fold\<^sub>T' f) (x#xs) = \<langle>comp\<^sub>T\<rangle> . (\<langle>f\<rangle> . \<langle>x\<rangle>) . (\<langle>fold\<^sub>T' f\<rangle> . \<langle>xs\<rangle>)" unfolding fold\<^sub>T'.simps(2) fun_app_lifted_def left_identity ..
     
 definition fold\<^sub>T :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b" where
   "fold\<^sub>T \<equiv> lift_3 fold\<^sub>T'"

@@ -20,7 +20,7 @@ definition consistentS :: "('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow
 term 0 (**)
   
 abbreviation rel_fun_lifted :: "('a \<Rightarrow> 'c \<Rightarrow> bool) \<Rightarrow> ('b \<Rightarrow> 'd \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('c ==_\<Longrightarrow> 'd) \<Rightarrow> bool" (infixr "===>\<^sub>T" 55) where
- "rel_fun_lifted R R' \<equiv> R ===> consistentS R'"
+  "rel_fun_lifted R R' \<equiv> R ===> consistentS R'"
 term 0 (**)
   
 definition consistentDP :: "('param \<Rightarrow>\<^sub>T 'result) \<Rightarrow> bool" where
@@ -123,21 +123,21 @@ proof -
 qed
 lemmas fun_app_lifted_consistency = fun_app_lifted_transfer[unfolded rel_fun_def, rule_format]
 term 0 (**)
-
-lemma lift_'_transfer[transfer_rule]: "(op =) x (lift_' x)"
+  
+lemma lift_'_transfer[transfer_rule]: "(R ===> R) (\<lambda>x. x) lift_'"
   unfolding lift_'_def ..
-
-lemma lift_3_transfer[transfer_rule]: "(op = ===>\<^sub>T op =) f (lift_3 f)"
+    
+lemma lift_3_transfer[transfer_rule]: "((R0 ===> R1) ===> (R0 ===>\<^sub>T R1)) (\<lambda>f. f) lift_3"
   unfolding lift_3_def lift_'_def by transfer_prover
-
-lemma lift_33_transfer[transfer_rule]: "(op = ===>\<^sub>T op = ===>\<^sub>T op =) f (lift_33 f)"
+    
+lemma lift_33_transfer[transfer_rule]: "((R0 ===> R1 ===> R2) ===> (R0 ===>\<^sub>T R1 ===>\<^sub>T R2)) (\<lambda>f. f) lift_33"
   unfolding lift_33_def lift_3_def lift_'_def by transfer_prover
 term 0 (**)
   
 lemma Cons_transfer[transfer_rule]:
   "(op = ===>\<^sub>T op = ===>\<^sub>T op =) Cons Cons\<^sub>T"
   unfolding Cons\<^sub>T_def by transfer_prover
-
+    
 lemma unlift_'_transfer[transfer_rule]:
   "(R ===> consistentS R) (\<lambda>x. x) unlift_'"
   unfolding unlift_'_def by transfer_prover
@@ -147,7 +147,7 @@ lemma unlift_3_transfer[transfer_rule]:
   "((R0 ===>\<^sub>T R1) ===> (R0 ===> consistentS R1)) (\<lambda>f. f) unlift_3"
   unfolding unlift_3_def by transfer_prover
 term 0 (**)
-
+  
 lemma unlift_33_transfer[transfer_rule]:
   "((R0 ===>\<^sub>T R1 ===>\<^sub>T R2) ===> (R0 ===> R1 ===> consistentS R2)) (\<lambda>f. f) unlift_33"
   unfolding unlift_33_def by transfer_prover  
@@ -156,35 +156,50 @@ term 0 (**)
 lemma case_option_transfer[transfer_rule]:
   "(op = ===>\<^sub>T (op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op =) case_option case_option\<^sub>T"
   unfolding case_option\<^sub>T_def by transfer_prover
-
+    
 lemma case_list_transfer[transfer_rule]:
   "(op = ===>\<^sub>T (op = ===>\<^sub>T op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op =) case_list case_list\<^sub>T"
   unfolding case_list\<^sub>T_def by transfer_prover
-
+    
 lemma case_prod_transfer[transfer_rule]:
   "((op = ===>\<^sub>T op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op =) case_prod case_prod\<^sub>T"
   unfolding case_prod\<^sub>T_def by transfer_prover
 term 0 (**)
-
-lemma "R_q3p33 map map\<^sub>T"
+  
+lemma "((op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op =) map map\<^sub>T" (is "(?F ===>\<^sub>T ?G) _ _")
 proof -
-  fix f f\<^sub>T assume "(op = ===>\<^sub>T op =) f f\<^sub>T"
-  have "consistentS (op =) (map f xs) (map\<^sub>T' f\<^sub>T xs)" for xs
-    apply (induction xs)
-     apply (unfold list.map map\<^sub>T'.simps)
-    subgoal by transfer_prover
-    subgoal premises prems thm prems
-      apply transfer_prover_start
-                  prefer 8 apply transfer_step
-                 prefer 5 apply transfer_step
-                prefer 6 apply transfer_step
-               prefer 7 apply transfer_step
-              prefer 7 apply transfer_step
-             prefer 7 apply transfer_step
-            prefer 6 apply transfer_step
-           apply transfer_step
-          apply transfer_step
-      oops
+  have *:"(?F ===> ?G) map map\<^sub>T'"
+    unfolding map\<^sub>T'_def
+    apply transfer_prover_start
+              apply transfer_step+
+    sorry
+  show ?thesis
+    unfolding map\<^sub>T_def
+    supply [transfer_rule] = * by transfer_prover
+qed
+  
+lemma comp_transfer[transfer_rule]:
+  "((R1 ===>\<^sub>T R2) ===>\<^sub>T (R0 ===>\<^sub>T R1) ===>\<^sub>T (R0 ===>\<^sub>T R2)) comp comp\<^sub>T"
+  unfolding comp_def comp\<^sub>T_def by transfer_prover
+    
+term 0 (**)
+lemma id_transfer[transfer_rule]:
+  "(R ===>\<^sub>T R) id id\<^sub>T"
+  unfolding id_def id\<^sub>T_def by transfer_prover
+term 0 (**)
+  
+lemma "((op = ===>\<^sub>T op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op = ===>\<^sub>T op =) fold fold\<^sub>T" (is "(?F ===>\<^sub>T ?G) _ _")
+proof -
+  have *:"(?F ===> ?G) fold fold\<^sub>T'"
+    unfolding fold\<^sub>T'_def
+    apply transfer_prover_start
+              apply transfer_step+
+    sorry
+  show ?thesis
+    unfolding fold\<^sub>T_def
+    supply [transfer_rule] = * by transfer_prover
+qed
+  
 end
 end
 end
