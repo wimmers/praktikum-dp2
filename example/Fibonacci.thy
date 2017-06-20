@@ -39,7 +39,7 @@ fun fib\<^sub>T :: "nat \<Rightarrow>\<^sub>T int option" where
     . (\<langle>Pair\<^sub>T\<rangle> . (fib\<^sub>T (Suc n)) . (fib\<^sub>T n))"
 term 0 (**)
 
-lemma "consistentDP fib fib\<^sub>T"
+lemma "dp_consistency.consistentDP fib fib\<^sub>T"
 
   oops
 term 0 (**)
