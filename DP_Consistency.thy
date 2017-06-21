@@ -60,11 +60,9 @@ lemma consistentDP_intro:
   using assms unfolding consistentDP_def by blast
 term 0 (**)
   
-  (** Transfer rules **)
-lemma return_transfer[transfer_rule]:
-  "(R ===>\<^sub>T R) (\<lambda>x. x) return"
-  unfolding rel_fun_def return_def by (fastforce intro: consistentS_intro)
-lemmas consistentS_return = return_transfer[unfolded rel_fun_def, rule_format]
+lemma consistentS_return:
+  "R x y \<Longrightarrow> consistentS R x \<langle>y\<rangle>"
+  unfolding return_def by (fastforce intro: consistentS_intro)
 term 0 (**)
   
   (* Low level operators *)
@@ -101,7 +99,12 @@ lemma consistentS_checkmem:
       consistentS_put consistentS_bind_eq consistentM_upd elim: consistentM_elim split: option.splits)
 term 0 (**)
   
-lemma consistentS_bind_transfer[transfer_rule]:
+  (** Transfer rules **)
+lemma return_transfer[transfer_rule]:
+  "(R ===>\<^sub>T R) (\<lambda> x. x) return"
+  unfolding rel_fun_def by clarify (fact consistentS_return)
+    
+lemma bind_transfer[transfer_rule]:
   "(consistentS R0 ===> (R0 ===>\<^sub>T R1) ===> consistentS R1) (\<lambda>v f. f v) (op \<bind>)"
   unfolding bind_def rel_fun_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
     
@@ -180,7 +183,7 @@ lemma comp_transfer[transfer_rule]:
     
 lemma map_transfer[transfer_rule]:
   "((R0 ===>\<^sub>T R1) ===>\<^sub>T list_all2 R0 ===>\<^sub>T list_all2 R1) map map\<^sub>T"
-  apply (unfold map\<^sub>T_def, rule rel_funI, rule consistentS_return, rule rel_funI)
+  apply (unfold map\<^sub>T_def, rule rel_funI, rule return_transfer[THEN rel_funD], rule rel_funI)
   apply (induct_tac rule: list_all2_induct, assumption; unfold list.map map\<^sub>T'.simps)
   subgoal premises [transfer_rule] by transfer_prover
   subgoal premises [transfer_rule] by transfer_prover
@@ -189,11 +192,12 @@ term 0 (**)
   
 lemma fold_transfer[transfer_rule]:
   "((R0 ===>\<^sub>T R1 ===>\<^sub>T R1) ===>\<^sub>T list_all2 R0 ===>\<^sub>T R1 ===>\<^sub>T R1) fold fold\<^sub>T"
-  apply (unfold fold\<^sub>T_def, rule rel_funI, rule consistentS_return, rule rel_funI)
+  apply (unfold fold\<^sub>T_def, rule rel_funI, rule return_transfer[THEN rel_funD], rule rel_funI)
   apply (induct_tac rule: list_all2_induct, assumption; unfold fold.simps fold\<^sub>T'.simps)
   subgoal premises [transfer_rule] by transfer_prover
   subgoal premises [transfer_rule] by transfer_prover
   done
+
 end
 end
 end
