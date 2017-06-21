@@ -57,9 +57,11 @@ term 0 (**)
 definition If\<^sub>T :: "bool =='M\<Longrightarrow> 'a =='M\<Longrightarrow> 'a =='M\<Longrightarrow> 'a" where
   "If\<^sub>T \<equiv> lift_333 If"
   
+thm comp_def
 definition comp\<^sub>T :: "('b =='M\<Longrightarrow> 'c) =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'c)" where
-  "comp\<^sub>T \<equiv> \<lambda>g. \<langle>\<lambda>f. \<langle>\<lambda>x. \<langle>g\<rangle> . (\<langle>f\<rangle>.\<langle>x\<rangle>) \<rangle>\<rangle>"
+  "comp\<^sub>T \<equiv> \<lambda>f. \<langle>\<lambda>g. \<langle>\<lambda>x. \<langle>f\<rangle> . (\<langle>g\<rangle> . \<langle>x\<rangle>)\<rangle>\<rangle>"
   
+thm id_def
 definition id\<^sub>T :: "'a =='M\<Longrightarrow> 'a" where
   "id\<^sub>T \<equiv> \<lambda>x. \<langle>x\<rangle>"
 term 0 (**)
