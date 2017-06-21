@@ -192,8 +192,8 @@ lemma map_transfer[transfer_rule]:
   "((R0 ===>\<^sub>T R1) ===>\<^sub>T list_all2 R0 ===>\<^sub>T list_all2 R1) map map\<^sub>T"
   apply (unfold map\<^sub>T_def, rule lift_3_transfer[THEN rel_funD])
   apply ((rule rel_funI)+, induct_tac rule: list_all2_induct, assumption; unfold list.map map\<^sub>T'.simps)
-  subgoal premises prems[transfer_rule] by transfer_prover
-  subgoal premises prems[transfer_rule] by transfer_prover
+  subgoal premises [transfer_rule] by transfer_prover
+  subgoal premises [transfer_rule] by transfer_prover
   done
 term 0 (**)
   
@@ -201,8 +201,8 @@ lemma fold_transfer[transfer_rule]:
   "((R0 ===>\<^sub>T R1 ===>\<^sub>T R1) ===>\<^sub>T list_all2 R0 ===>\<^sub>T R1 ===>\<^sub>T R1) fold fold\<^sub>T"
   apply (unfold fold\<^sub>T_def, rule lift_3_transfer[THEN rel_funD])
   apply ((rule rel_funI)+, induct_tac rule: list_all2_induct, assumption; unfold fold.simps fold\<^sub>T'.simps)
-  subgoal premises prems[transfer_rule] by transfer_prover
-  subgoal premises prems[transfer_rule] by transfer_prover
+  subgoal premises [transfer_rule] by transfer_prover
+  subgoal premises [transfer_rule] by transfer_prover
   done
 end
 end

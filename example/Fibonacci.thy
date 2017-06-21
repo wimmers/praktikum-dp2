@@ -43,9 +43,9 @@ interpretation fib: dp_consistency fib .
 
 lemma "fib.consistentDP fib\<^sub>T"
   apply (rule fib.consistentDP_intro, induct_tac rule: fib\<^sub>T.induct, unfold fib\<^sub>T.simps; rule fib.consistentS_checkmem, unfold fib.simps)
-  subgoal premises prems[transfer_rule] by transfer_prover
-  subgoal premises prems[transfer_rule] by transfer_prover
-  subgoal premises prems[transfer_rule] by transfer_prover
+  subgoal premises [transfer_rule] by transfer_prover
+  subgoal premises [transfer_rule] by transfer_prover
+  subgoal premises [transfer_rule] by transfer_prover
   done
 
 end

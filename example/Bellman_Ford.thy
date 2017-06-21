@@ -42,7 +42,7 @@ context
 begin
 lemma "bf.consistentDP bf\<^sub>T"
   apply (rule bf.consistentDP_intro, induct_tac rule: bf\<^sub>T.induct, unfold bf\<^sub>T.simps; rule bf.consistentS_checkmem, unfold bf.simps)
-  subgoal premises prems[transfer_rule] by transfer_prover
+  subgoal premises [transfer_rule] by transfer_prover
   subgoal premises prems[transfer_rule]
     apply transfer_prover_start
                         apply transfer_step
