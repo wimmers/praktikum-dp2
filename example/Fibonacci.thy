@@ -39,9 +39,13 @@ fun fib\<^sub>T :: "nat \<Rightarrow>\<^sub>T int option" where
     . (\<langle>Pair\<^sub>T\<rangle> . (fib\<^sub>T (Suc n)) . (fib\<^sub>T n))"
 term 0 (**)
 
-lemma "dp_consistency.consistentDP fib fib\<^sub>T"
+interpretation dp: dp_consistency fib .
 
-  oops
-term 0 (**)
+lemma "dp.consistentDP fib\<^sub>T"
+  apply (rule dp.consistentDP_intro, induct_tac rule: fib\<^sub>T.induct, unfold fib\<^sub>T.simps; rule dp.consistentS_checkmem, unfold fib.simps)
+  subgoal by transfer_prover
+  subgoal by transfer_prover
+  subgoal premises prems supply [transfer_rule] = prems by transfer_prover
+  done
 
 end

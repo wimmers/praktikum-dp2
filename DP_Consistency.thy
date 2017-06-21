@@ -166,7 +166,8 @@ lemma case_prod_transfer[transfer_rule]:
   unfolding case_prod\<^sub>T_def by transfer_prover
 term 0 (**)
   
-lemma "((op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op =) map map\<^sub>T" (is "(?F ===>\<^sub>T ?G) _ _")
+lemma map_transfer[transfer_rule]:
+  "((op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op =) map map\<^sub>T" (is "(?F ===>\<^sub>T ?G) _ _")
 proof -
   have *:"(?F ===> ?G) map map\<^sub>T'"
     unfolding map\<^sub>T'_def
@@ -188,7 +189,8 @@ lemma id_transfer[transfer_rule]:
   unfolding id_def id\<^sub>T_def by transfer_prover
 term 0 (**)
   
-lemma "((op = ===>\<^sub>T op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op = ===>\<^sub>T op =) fold fold\<^sub>T" (is "(?F ===>\<^sub>T ?G) _ _")
+lemma fold_transfer[transfer_rule]:
+  "((op = ===>\<^sub>T op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op = ===>\<^sub>T op =) fold fold\<^sub>T" (is "(?F ===>\<^sub>T ?G) _ _")
 proof -
   have *:"(?F ===> ?G) fold fold\<^sub>T'"
     unfolding fold\<^sub>T'_def
@@ -199,7 +201,26 @@ proof -
     unfolding fold\<^sub>T_def
     supply [transfer_rule] = * by transfer_prover
 qed
-  
+
+lemma plus_transfer[transfer_rule]:
+  "(op = ===>\<^sub>T op = ===>\<^sub>T op =) plus plus\<^sub>T"
+  unfolding plus\<^sub>T_def by transfer_prover
+
+lemma Some_transfer[transfer_rule]:
+  "(op = ===>\<^sub>T op =) Some Some\<^sub>T"
+  unfolding Some\<^sub>T_def by transfer_prover
+
+lemma Pair_transfer[transfer_rule]:
+  "(op = ===>\<^sub>T op = ===>\<^sub>T op =) Pair Pair\<^sub>T"
+  unfolding Pair\<^sub>T_def by transfer_prover
+
+lemma min_transfer[transfer_rule]:
+  "(op = ===>\<^sub>T op = ===>\<^sub>T op =) min min\<^sub>T"
+  unfolding min\<^sub>T_def by transfer_prover
+
+lemma upt_transfer[transfer_rule]:
+  "(op = ===>\<^sub>T op = ===>\<^sub>T op =) upt upt\<^sub>T"
+  unfolding upt\<^sub>T_def by transfer_prover
 end
 end
 end

@@ -89,7 +89,9 @@ lemma
     
 definition fold\<^sub>T :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b" where
   "fold\<^sub>T \<equiv> lift_3 fold\<^sub>T'"
-  
+
+definition upt\<^sub>T :: "nat =='M\<Longrightarrow> nat =='M\<Longrightarrow> nat list" where
+  "upt\<^sub>T \<equiv> lift_33 upt"
 term 0 (**)
   
   (* Option *)
