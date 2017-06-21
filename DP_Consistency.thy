@@ -121,7 +121,6 @@ proof -
     } hence "consistentS R' (f x) (f\<^sub>T . x\<^sub>T)" by (blast intro: consistentS_intro)
   } thus ?thesis by blast
 qed
-lemmas fun_app_lifted_consistency = fun_app_lifted_transfer[unfolded rel_fun_def, rule_format]
 term 0 (**)
   
 lemma lift_'_transfer[transfer_rule]: "(R ===> R) (\<lambda>x. x) lift_'"
@@ -166,42 +165,12 @@ lemma case_prod_transfer[transfer_rule]:
   unfolding case_prod\<^sub>T_def by transfer_prover
 term 0 (**)
   
-lemma map_transfer[transfer_rule]:
-  "((op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op =) map map\<^sub>T" (is "(?F ===>\<^sub>T ?G) _ _")
-proof -
-  have *:"(?F ===> ?G) map map\<^sub>T'"
-    unfolding map\<^sub>T'_def
-    apply transfer_prover_start
-              apply transfer_step+
-    sorry
-  show ?thesis
-    unfolding map\<^sub>T_def
-    supply [transfer_rule] = * by transfer_prover
-qed
-  
-lemma comp_transfer[transfer_rule]:
-  "((R1 ===>\<^sub>T R2) ===>\<^sub>T (R0 ===>\<^sub>T R1) ===>\<^sub>T (R0 ===>\<^sub>T R2)) comp comp\<^sub>T"
-  unfolding comp_def comp\<^sub>T_def by transfer_prover
-    
 term 0 (**)
 lemma id_transfer[transfer_rule]:
   "(R ===>\<^sub>T R) id id\<^sub>T"
   unfolding id_def id\<^sub>T_def by transfer_prover
 term 0 (**)
   
-lemma fold_transfer[transfer_rule]:
-  "((op = ===>\<^sub>T op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op = ===>\<^sub>T op =) fold fold\<^sub>T" (is "(?F ===>\<^sub>T ?G) _ _")
-proof -
-  have *:"(?F ===> ?G) fold fold\<^sub>T'"
-    unfolding fold\<^sub>T'_def
-    apply transfer_prover_start
-              apply transfer_step+
-    sorry
-  show ?thesis
-    unfolding fold\<^sub>T_def
-    supply [transfer_rule] = * by transfer_prover
-qed
-
 lemma plus_transfer[transfer_rule]:
   "(op = ===>\<^sub>T op = ===>\<^sub>T op =) plus plus\<^sub>T"
   unfolding plus\<^sub>T_def by transfer_prover
@@ -221,6 +190,37 @@ lemma min_transfer[transfer_rule]:
 lemma upt_transfer[transfer_rule]:
   "(op = ===>\<^sub>T op = ===>\<^sub>T op =) upt upt\<^sub>T"
   unfolding upt\<^sub>T_def by transfer_prover
+
+lemma map_transfer[transfer_rule]:
+  "((op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op =) map map\<^sub>T" (is "(?F ===>\<^sub>T ?G) _ _")
+proof -
+  have *:"(?F ===> ?G) map map\<^sub>T'"
+    unfolding map\<^sub>T'_def
+    apply transfer_prover_start
+              apply transfer_step+
+    sorry
+  show ?thesis
+    unfolding map\<^sub>T_def
+    supply [transfer_rule] = * by transfer_prover
+qed
+  
+lemma comp_transfer[transfer_rule]:
+  "((R1 ===>\<^sub>T R2) ===>\<^sub>T (R0 ===>\<^sub>T R1) ===>\<^sub>T (R0 ===>\<^sub>T R2)) comp comp\<^sub>T"
+  unfolding comp_def comp\<^sub>T_def by transfer_prover
+    
+lemma fold_transfer[transfer_rule]:
+  "((op = ===>\<^sub>T op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op = ===>\<^sub>T op =) fold fold\<^sub>T" (is "(?F ===>\<^sub>T ?G) _ _")
+proof -
+  have *:"(?F ===> ?G) fold fold\<^sub>T'"
+    unfolding fold\<^sub>T'_def
+    apply transfer_prover_start
+              apply transfer_step+
+    sorry
+  show ?thesis
+    unfolding fold\<^sub>T_def
+    supply [transfer_rule] = * by transfer_prover
+qed
+
 end
 end
 end
