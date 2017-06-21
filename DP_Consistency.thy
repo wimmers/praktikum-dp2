@@ -154,15 +154,17 @@ lemma unlift_33_transfer[transfer_rule]:
 term 0 (**)
   
 lemma case_option_transfer[transfer_rule]:
-  "(op = ===>\<^sub>T (op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op =) case_option case_option\<^sub>T"
+  "(R1 ===>\<^sub>T (R0 ===>\<^sub>T R1) ===>\<^sub>T rel_option R0 ===>\<^sub>T R1) case_option case_option\<^sub>T"
   unfolding case_option\<^sub>T_def by transfer_prover
-    
+term 0 (**)
+  
 lemma case_list_transfer[transfer_rule]:
-  "(op = ===>\<^sub>T (op = ===>\<^sub>T op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op =) case_list case_list\<^sub>T"
+  "(R1 ===>\<^sub>T (R0 ===>\<^sub>T list_all2 R0 ===>\<^sub>T R1) ===>\<^sub>T list_all2 R0 ===>\<^sub>T R1) case_list case_list\<^sub>T"
   unfolding case_list\<^sub>T_def by transfer_prover
-    
+term 0 (**)
+  
 lemma case_prod_transfer[transfer_rule]:
-  "((op = ===>\<^sub>T op = ===>\<^sub>T op =) ===>\<^sub>T op = ===>\<^sub>T op =) case_prod case_prod\<^sub>T"
+  "((R0 ===>\<^sub>T R1 ===>\<^sub>T R2) ===>\<^sub>T rel_prod R0 R1 ===>\<^sub>T R2) case_prod case_prod\<^sub>T"
   unfolding case_prod\<^sub>T_def by transfer_prover
 term 0 (**)
   
@@ -175,7 +177,8 @@ term 0 (**)
 lemma plus_transfer[transfer_rule]:
   "(op = ===>\<^sub>T op = ===>\<^sub>T op =) plus plus\<^sub>T"
   unfolding plus\<^sub>T_def by transfer_prover
-    
+term 0 (**)
+  
 lemma Some_transfer[transfer_rule]:
   "(R ===>\<^sub>T rel_option R) Some Some\<^sub>T"
   unfolding Some\<^sub>T_def by transfer_prover
@@ -220,7 +223,7 @@ proof -
     done
   show ?thesis unfolding fold\<^sub>T_def by transfer_prover
 qed
-  
+
 end
 end
 end
