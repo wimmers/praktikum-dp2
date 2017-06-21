@@ -61,42 +61,35 @@ lemma consistentDP_intro:
 term 0 (**)
   
 lemma consistentS_return:
-  "R x y \<Longrightarrow> consistentS R x \<langle>y\<rangle>"
+  "\<lbrakk>R x y\<rbrakk> \<Longrightarrow> consistentS R x \<langle>y\<rangle>"
   unfolding return_def by (fastforce intro: consistentS_intro)
 term 0 (**)
   
   (* Low level operators *)
 lemma consistentM_upd:
-  assumes "consistentM M" "v = dp param"
-  shows "consistentM (M(param\<mapsto>v))"
-  using assms unfolding consistentM_def by auto
+  "\<lbrakk>consistentM M; v = dp param\<rbrakk> \<Longrightarrow> consistentM (M(param\<mapsto>v))"
+  unfolding consistentM_def by auto
 term 0 (**)
   
 lemma consistentS_get:
-  assumes "\<And>M. consistentM M \<Longrightarrow> consistentS R v (sf M)"
-  shows "consistentS R v (get \<bind> sf)"
-  using assms unfolding get_def bind_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
-    
+  "\<lbrakk>\<And>M. consistentM M \<Longrightarrow> consistentS R v (sf M)\<rbrakk> \<Longrightarrow> consistentS R v (get \<bind> sf)"
+  unfolding get_def bind_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
 term 0 (**)
   
 lemma consistentS_put:
-  assumes "consistentS R v sf" "consistentM M"
-  shows "consistentS R v (put M \<then> sf)"
-  using assms unfolding put_def bind_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
+  "\<lbrakk>consistentS R v sf; consistentM M\<rbrakk> \<Longrightarrow> consistentS R v (put M \<then> sf)"
+  unfolding put_def bind_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
 term 0 (**)
   
 lemma consistentS_bind_eq:
-  assumes "consistentS op = v s" "consistentS R (f v) (sf v)"
-  shows "consistentS R (f v) (s \<bind> sf)"
-  using assms unfolding bind_def rel_fun_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
+  "\<lbrakk>consistentS op = v s; consistentS R (f v) (sf v)\<rbrakk> \<Longrightarrow> consistentS R (f v) (s \<bind> sf)"
+  unfolding bind_def rel_fun_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
 term 0 (**)
   
 lemma consistentS_checkmem:
-  assumes "consistentS op = (dp param) s"
-  shows "consistentS op = (dp param) (checkmem param s)"
-  using assms unfolding checkmem_def
-  by (fastforce intro: consistentS_return consistentS_get
-      consistentS_put consistentS_bind_eq consistentM_upd elim: consistentM_elim split: option.splits)
+  "\<lbrakk>consistentS op = (dp param) s\<rbrakk> \<Longrightarrow> consistentS op = (dp param) (checkmem param s)"
+  unfolding checkmem_def by (fastforce intro: consistentS_return consistentS_get consistentS_put
+      consistentS_bind_eq consistentM_upd elim: consistentM_elim split: option.splits)
 term 0 (**)
   
   (** Transfer rules **)
