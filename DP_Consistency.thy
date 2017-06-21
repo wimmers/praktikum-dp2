@@ -62,7 +62,7 @@ term 0 (**)
   
   (** Transfer rules **)
 lemma consistentS_return_transfer[transfer_rule]:
-  "(R ===> consistentS R) (\<lambda>x. x) (\<lambda>x. \<langle>x\<rangle>)"
+  "(R ===>\<^sub>T R) (\<lambda>x. x) return"
   unfolding rel_fun_def return_def by (fastforce intro: consistentS_intro)
 lemmas consistentS_return = consistentS_return_transfer[unfolded rel_fun_def, rule_format]
 term 0 (**)
@@ -102,11 +102,11 @@ lemma consistentS_checkmem:
 term 0 (**)
   
 lemma consistentS_bind_transfer[transfer_rule]:
-  "(consistentS R0 ===> (R0 ===>\<^sub>T R1) ===> consistentS R1) (\<lambda>v f. f v) (\<lambda>s sf. s \<bind> sf)"
+  "(consistentS R0 ===> (R0 ===>\<^sub>T R1) ===> consistentS R1) (\<lambda>v f. f v) (op \<bind>)"
   unfolding bind_def rel_fun_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
     
 lemma fun_app_lifted_transfer[transfer_rule]:
-  "(consistentS (R ===>\<^sub>T R') ===> consistentS R ===> consistentS R') (\<lambda>f x. f x) (\<lambda>f\<^sub>T x\<^sub>T. f\<^sub>T . x\<^sub>T)"
+  "(consistentS (R0 ===>\<^sub>T R1) ===> consistentS R0 ===> consistentS R1) (\<lambda>f x. f x) (op .)"
   unfolding fun_app_lifted_def by transfer_prover
 term 0 (**)
   
