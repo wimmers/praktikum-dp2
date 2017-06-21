@@ -111,7 +111,7 @@ lemma fun_app_lifted_transfer[transfer_rule]:
 term 0 (**)
   
 lemma lift_'_transfer[transfer_rule]: "(R ===> R) (\<lambda>x. x) lift_'"
-  unfolding lift_'_def ..
+  unfolding lift_'_def by transfer_prover
     
 lemma lift_3_transfer[transfer_rule]: "((R0 ===> R1) ===> (R0 ===>\<^sub>T R1)) (\<lambda>f. f) lift_3"
   unfolding lift_3_def lift_'_def by transfer_prover
