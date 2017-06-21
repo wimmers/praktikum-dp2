@@ -137,7 +137,7 @@ lemma Cons_transfer[transfer_rule]:
   "(R ===>\<^sub>T list_all2 R ===>\<^sub>T list_all2 R) Cons Cons\<^sub>T"
   unfolding Cons\<^sub>T_def by transfer_prover
 term 0 (**)
-
+  
 lemma unlift_'_transfer[transfer_rule]:
   "(R ===> consistentS R) (\<lambda>x. x) unlift_'"
   unfolding unlift_'_def by transfer_prover
@@ -180,12 +180,12 @@ lemma Some_transfer[transfer_rule]:
   "(R ===>\<^sub>T rel_option R) Some Some\<^sub>T"
   unfolding Some\<^sub>T_def by transfer_prover
 term 0 (**)
-    
+  
 lemma Pair_transfer[transfer_rule]:
   "(R0 ===>\<^sub>T R1 ===>\<^sub>T rel_prod R0 R1) Pair Pair\<^sub>T"
   unfolding Pair\<^sub>T_def by transfer_prover
 term 0 (**)
-    
+  
 lemma min_transfer[transfer_rule]:
   "(op = ===>\<^sub>T op = ===>\<^sub>T op =) min min\<^sub>T"
   unfolding min\<^sub>T_def by transfer_prover
@@ -201,42 +201,26 @@ lemma comp_transfer[transfer_rule]:
 lemma map_transfer[transfer_rule]:
   "((R0 ===>\<^sub>T R1) ===>\<^sub>T list_all2 R0 ===>\<^sub>T list_all2 R1) map map\<^sub>T"
 proof -
-  { fix f f\<^sub>T xs xs\<^sub>T
-    assume assms: "list_all2 R0 xs xs\<^sub>T" "(R0 ===>\<^sub>T R1) f f\<^sub>T"
-    have "consistentS (list_all2 R1) (map f xs) (map\<^sub>T' f\<^sub>T xs\<^sub>T)"
-      using assms apply (induction rule: list_all2_induct)
-      subgoal premises prems
-        unfolding list.map map\<^sub>T'.simps by transfer_prover
-      subgoal premises prems
-        unfolding list.map map\<^sub>T'.simps supply [transfer_rule] = prems by transfer_prover
-      done
-  }
-  hence [transfer_rule]: "((R0 ===>\<^sub>T R1) ===> list_all2 R0 ===>\<^sub>T list_all2 R1) map map\<^sub>T'"
-    by blast
-  show ?thesis
-    unfolding map\<^sub>T_def by transfer_prover
+  have [transfer_rule]: "((R0 ===>\<^sub>T R1) ===> list_all2 R0 ===>\<^sub>T list_all2 R1) map map\<^sub>T'"
+    apply ((rule rel_funI)+, induct_tac rule: list_all2_induct, assumption; unfold list.map map\<^sub>T'.simps)
+    subgoal premises prems[transfer_rule] by transfer_prover
+    subgoal premises prems[transfer_rule] by transfer_prover
+    done
+  show ?thesis unfolding map\<^sub>T_def by transfer_prover
 qed
 term 0 (**)
   
 lemma fold_transfer[transfer_rule]:
   "((R0 ===>\<^sub>T R1 ===>\<^sub>T R1) ===>\<^sub>T list_all2 R0 ===>\<^sub>T R1 ===>\<^sub>T R1) fold fold\<^sub>T"
 proof -
-  { fix f f\<^sub>T xs xs\<^sub>T
-    assume assms: "list_all2 R0 xs xs\<^sub>T" "(R0 ===>\<^sub>T R1 ===>\<^sub>T R1) f f\<^sub>T"
-    have "consistentS (R1 ===>\<^sub>T R1) (fold f xs) (fold\<^sub>T' f\<^sub>T xs\<^sub>T)"
-      using assms apply (induction rule: list_all2_induct)
-      subgoal premises prems
-        unfolding fold.simps fold\<^sub>T'.simps by transfer_prover
-      subgoal premises prems
-        unfolding fold.simps fold\<^sub>T'.simps supply [transfer_rule] = prems by transfer_prover
-      done
-  }
-  hence [transfer_rule]: "((R0 ===>\<^sub>T R1 ===>\<^sub>T R1) ===> list_all2 R0 ===>\<^sub>T R1 ===>\<^sub>T R1) fold fold\<^sub>T'"
-    by blast
-  show ?thesis
-    unfolding fold\<^sub>T_def by transfer_prover
+  have [transfer_rule]: "((R0 ===>\<^sub>T R1 ===>\<^sub>T R1) ===> list_all2 R0 ===>\<^sub>T R1 ===>\<^sub>T R1) fold fold\<^sub>T'"
+    apply ((rule rel_funI)+, induct_tac rule: list_all2_induct, assumption; unfold fold.simps fold\<^sub>T'.simps)
+    subgoal premises prems[transfer_rule] by transfer_prover
+    subgoal premises prems[transfer_rule] by transfer_prover
+    done
+  show ?thesis unfolding fold\<^sub>T_def by transfer_prover
 qed
-
+  
 end
 end
 end
