@@ -38,7 +38,7 @@ term 0 (**)
 syntax
   "_lambda\<^sub>T" :: "[pttrns, 'a] \<Rightarrow> logic" ("(3\<lambda>\<^sub>T_./ _)" [0, 3] 3)
 translations
-  "\<lambda>\<^sub>T v vs. e" \<rightharpoonup> "\<lambda> v. \<langle>\<lambda>\<^sub>T vs. e\<rangle>"
+  "\<lambda>\<^sub>T v vs. e" \<rightharpoonup> "\<lambda>\<^sub>T v. \<lambda>\<^sub>T vs. e"
   "\<lambda>\<^sub>T v. e" \<rightharpoonup> "\<lambda> v. \<langle>e\<rangle>"
 
 definition unlift_' :: "'a \<Rightarrow> ('M, 'a) state" where
