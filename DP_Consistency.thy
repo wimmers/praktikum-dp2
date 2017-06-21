@@ -1,5 +1,5 @@
 theory DP_Consistency
-  imports "DP_Lifting"
+  imports "./Monad" "./DP_Lifting"
 begin
   
 locale dp_consistency =
@@ -61,10 +61,10 @@ lemma consistentDP_intro:
 term 0 (**)
   
   (** Transfer rules **)
-lemma consistentS_return_transfer[transfer_rule]:
+lemma return_transfer[transfer_rule]:
   "(R ===>\<^sub>T R) (\<lambda>x. x) return"
   unfolding rel_fun_def return_def by (fastforce intro: consistentS_intro)
-lemmas consistentS_return = consistentS_return_transfer[unfolded rel_fun_def, rule_format]
+lemmas consistentS_return = return_transfer[unfolded rel_fun_def, rule_format]
 term 0 (**)
   
   (* Low level operators *)
@@ -108,16 +108,6 @@ lemma consistentS_bind_transfer[transfer_rule]:
 lemma fun_app_lifted_transfer[transfer_rule]:
   "(consistentS (R0 ===>\<^sub>T R1) ===> consistentS R0 ===> consistentS R1) (\<lambda>f x. f x) (op .)"
   unfolding fun_app_lifted_def by transfer_prover
-term 0 (**)
-  
-lemma lift_'_transfer[transfer_rule]: "(R ===> R) (\<lambda>x. x) lift_'"
-  unfolding lift_'_def by transfer_prover
-    
-lemma lift_3_transfer[transfer_rule]: "((R0 ===> R1) ===> (R0 ===>\<^sub>T R1)) (\<lambda>f. f) lift_3"
-  unfolding lift_3_def lift_'_def by transfer_prover
-    
-lemma lift_33_transfer[transfer_rule]: "((R0 ===> R1 ===> R2) ===> (R0 ===>\<^sub>T R1 ===>\<^sub>T R2)) (\<lambda>f. f) lift_33"
-  unfolding lift_33_def lift_3_def lift_'_def by transfer_prover
 term 0 (**)
   
 lemma unlift_'_transfer[transfer_rule]:
@@ -190,8 +180,8 @@ lemma comp_transfer[transfer_rule]:
     
 lemma map_transfer[transfer_rule]:
   "((R0 ===>\<^sub>T R1) ===>\<^sub>T list_all2 R0 ===>\<^sub>T list_all2 R1) map map\<^sub>T"
-  apply (unfold map\<^sub>T_def, rule lift_3_transfer[THEN rel_funD])
-  apply ((rule rel_funI)+, induct_tac rule: list_all2_induct, assumption; unfold list.map map\<^sub>T'.simps)
+  apply (unfold map\<^sub>T_def, rule rel_funI, rule consistentS_return, rule rel_funI)
+  apply (induct_tac rule: list_all2_induct, assumption; unfold list.map map\<^sub>T'.simps)
   subgoal premises [transfer_rule] by transfer_prover
   subgoal premises [transfer_rule] by transfer_prover
   done
@@ -199,8 +189,8 @@ term 0 (**)
   
 lemma fold_transfer[transfer_rule]:
   "((R0 ===>\<^sub>T R1 ===>\<^sub>T R1) ===>\<^sub>T list_all2 R0 ===>\<^sub>T R1 ===>\<^sub>T R1) fold fold\<^sub>T"
-  apply (unfold fold\<^sub>T_def, rule lift_3_transfer[THEN rel_funD])
-  apply ((rule rel_funI)+, induct_tac rule: list_all2_induct, assumption; unfold fold.simps fold\<^sub>T'.simps)
+  apply (unfold fold\<^sub>T_def, rule rel_funI, rule consistentS_return, rule rel_funI)
+  apply (induct_tac rule: list_all2_induct, assumption; unfold fold.simps fold\<^sub>T'.simps)
   subgoal premises [transfer_rule] by transfer_prover
   subgoal premises [transfer_rule] by transfer_prover
   done
