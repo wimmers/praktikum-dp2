@@ -87,40 +87,27 @@ lemma consistentS_put:
   using assms unfolding put_def bind_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
 term 0 (**)
   
-lemma consistentS_bind:
+lemma consistentS_bind_eq:
   assumes "consistentS op = v s" "consistentS R (f v) (sf v)"
   shows "consistentS R (f v) (s \<bind> sf)"
   using assms unfolding bind_def rel_fun_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
 term 0 (**)
+
+lemma consistentS_bind_transfer[transfer_rule]:
+    "(consistentS R0 ===> (R0 ===>\<^sub>T R1) ===> consistentS R1) (\<lambda>v f. f v) (\<lambda>s sf. s \<bind> sf)"
+  unfolding bind_def rel_fun_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
   
 lemma consistentS_checkmem:
   assumes "consistentS op = (dp param) s"
   shows "consistentS op = (dp param) (checkmem param s)"
   using assms unfolding checkmem_def
   by (fastforce intro: consistentS_return consistentS_get
-      consistentS_put consistentS_bind consistentM_upd elim: consistentM_elim split: option.splits)
+      consistentS_put consistentS_bind_eq consistentM_upd elim: consistentM_elim split: option.splits)
 term 0 (**)
   
 lemma fun_app_lifted_transfer[transfer_rule]:
   "(consistentS (R ===>\<^sub>T R') ===> consistentS R ===> consistentS R') (\<lambda>f x. f x) (\<lambda>f\<^sub>T x\<^sub>T. f\<^sub>T . x\<^sub>T)"
-proof -
-  { fix f f\<^sub>T x x\<^sub>T assume sf: "consistentS (R ===>\<^sub>T R') f f\<^sub>T" and sx: "consistentS R x x\<^sub>T"
-    { fix M ov oM assume cm: "consistentM M" and os:"runState (f\<^sub>T . x\<^sub>T) M = (ov, oM)"
-      obtain fv M' where bf: "runState f\<^sub>T M = (fv, M')" and rf: "(R ===> consistentS R') f fv" and cm':"consistentM M'"
-        using sf cm by (auto elim: consistentS_elim)
-      obtain xv M'' where bx: "runState x\<^sub>T M' = (xv, M'')" and rx: "R x xv" and cm'': "consistentM M''"
-        using sx cm' by (auto elim: consistentS_elim)
-      have srfx: "consistentS R' (f x) (fv xv)"
-        using rf rx by (auto dest: rel_funD)
-      obtain res M''' where bres: "runState (fv xv) M'' = (res, M''')" and rres: "R' (f x) (res)" and cm''': "consistentM M'''"
-        using srfx cm'' by (auto elim: consistentS_elim)
-      have bfx: "runState (f\<^sub>T . x\<^sub>T) M = (res, M''')"
-        unfolding fun_app_lifted_def bind_def by (auto simp: bf bx bres)
-      have "R' (f x) ov" "consistentM oM"
-        using os bfx rres cm''' by auto
-    } hence "consistentS R' (f x) (f\<^sub>T . x\<^sub>T)" by (blast intro: consistentS_intro)
-  } thus ?thesis by blast
-qed
+  unfolding fun_app_lifted_def by transfer_prover
 term 0 (**)
   
 lemma lift_'_transfer[transfer_rule]: "(R ===> R) (\<lambda>x. x) lift_'"
