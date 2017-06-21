@@ -36,12 +36,12 @@ fun bf\<^sub>T :: "nat\<times>nat \<Rightarrow>\<^sub>T int" where
     . (bf\<^sub>T (k, j))"
 term 0 (**)
   
-interpretation dp: dp_consistency bf .
+interpretation bf: dp_consistency bf .
 context
   includes lifting_syntax
 begin
-lemma "dp.consistentDP bf\<^sub>T"
-  apply (rule dp.consistentDP_intro, induct_tac rule: bf\<^sub>T.induct, unfold bf\<^sub>T.simps; rule dp.consistentS_checkmem, unfold bf.simps)
+lemma "bf.consistentDP bf\<^sub>T"
+  apply (rule bf.consistentDP_intro, induct_tac rule: bf\<^sub>T.induct, unfold bf\<^sub>T.simps; rule bf.consistentS_checkmem, unfold bf.simps)
   subgoal premises prems[transfer_rule] by transfer_prover
   subgoal premises prems[transfer_rule]
     apply transfer_prover_start

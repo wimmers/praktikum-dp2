@@ -93,10 +93,6 @@ lemma consistentS_bind_eq:
   using assms unfolding bind_def rel_fun_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
 term 0 (**)
 
-lemma consistentS_bind_transfer[transfer_rule]:
-    "(consistentS R0 ===> (R0 ===>\<^sub>T R1) ===> consistentS R1) (\<lambda>v f. f v) (\<lambda>s sf. s \<bind> sf)"
-  unfolding bind_def rel_fun_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
-  
 lemma consistentS_checkmem:
   assumes "consistentS op = (dp param) s"
   shows "consistentS op = (dp param) (checkmem param s)"
@@ -104,6 +100,10 @@ lemma consistentS_checkmem:
   by (fastforce intro: consistentS_return consistentS_get
       consistentS_put consistentS_bind_eq consistentM_upd elim: consistentM_elim split: option.splits)
 term 0 (**)
+  
+lemma consistentS_bind_transfer[transfer_rule]:
+    "(consistentS R0 ===> (R0 ===>\<^sub>T R1) ===> consistentS R1) (\<lambda>v f. f v) (\<lambda>s sf. s \<bind> sf)"
+  unfolding bind_def rel_fun_def by (fastforce intro: consistentS_intro elim: consistentS_elim split: prod.split)
   
 lemma fun_app_lifted_transfer[transfer_rule]:
   "(consistentS (R ===>\<^sub>T R') ===> consistentS R ===> consistentS R') (\<lambda>f x. f x) (\<lambda>f\<^sub>T x\<^sub>T. f\<^sub>T . x\<^sub>T)"
@@ -118,11 +118,6 @@ lemma lift_3_transfer[transfer_rule]: "((R0 ===> R1) ===> (R0 ===>\<^sub>T R1)) 
     
 lemma lift_33_transfer[transfer_rule]: "((R0 ===> R1 ===> R2) ===> (R0 ===>\<^sub>T R1 ===>\<^sub>T R2)) (\<lambda>f. f) lift_33"
   unfolding lift_33_def lift_3_def lift_'_def by transfer_prover
-term 0 (**)
-  
-lemma Cons_transfer[transfer_rule]:
-  "(R ===>\<^sub>T list_all2 R ===>\<^sub>T list_all2 R) Cons Cons\<^sub>T"
-  unfolding Cons\<^sub>T_def by transfer_prover
 term 0 (**)
   
 lemma unlift_'_transfer[transfer_rule]:
@@ -164,6 +159,11 @@ term 0 (**)
 lemma plus_transfer[transfer_rule]:
   "(op = ===>\<^sub>T op = ===>\<^sub>T op =) plus plus\<^sub>T"
   unfolding plus\<^sub>T_def by transfer_prover
+term 0 (**)
+  
+lemma Cons_transfer[transfer_rule]:
+  "(R ===>\<^sub>T list_all2 R ===>\<^sub>T list_all2 R) Cons Cons\<^sub>T"
+  unfolding Cons\<^sub>T_def by transfer_prover
 term 0 (**)
   
 lemma Some_transfer[transfer_rule]:
