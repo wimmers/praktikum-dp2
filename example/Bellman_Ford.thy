@@ -66,7 +66,6 @@ lemma bf_inductS':
   "\<lbrakk>\<And>j. bf.consistentS op = (bf (0, j)) (bf\<^sub>T (0, j));
     \<And>k j. \<lbrakk>K k k k;
            K j j j;
-           (K k ===> op = ===> rel_prod (K k) op =) Pair Pair;
            (rel_prod (K k) op = ===> bf.consistentS op =) bf bf\<^sub>T;
            (rel_prod (K k) (K j) ===> bf.consistentS op =) bf bf\<^sub>T
            \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (Suc k, j)) (bf\<^sub>T (Suc k, j))
