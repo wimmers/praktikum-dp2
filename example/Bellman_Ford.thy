@@ -61,7 +61,7 @@ lemma bf_inductS:
    \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (x::nat\<times>nat)) (bf\<^sub>T x)"
   by (fact bf_induct)
 
-(*
+
 lemma bf_inductS':
   "\<lbrakk>\<And>j. bf.consistentS op = (bf (0, j)) (bf\<^sub>T (0, j));
     \<And>k j. \<lbrakk>K k k k;
@@ -81,12 +81,12 @@ lemma bf_inductS_l:
            \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (Suc k, j)) (bf\<^sub>T (Suc k, j))
    \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (x::nat\<times>nat)) (bf\<^sub>T x)"
   unfolding rel_fun_def by (metis bf_inductS)
-*)
+
 term 0 (**)
 
 lemma "bf.consistentDP bf\<^sub>T"
   apply (rule bf.consistentDP_intro, induct_tac rule: bf_inductS, unfold bf\<^sub>T.simps; rule bf.consistentS_checkmem, unfold bf.simps)
-  subgoal premises prems[transfer_rule]
+  subgoal premises prems
     apply (rule bf.return_transfer[THEN rel_funD])
     apply (simp only:; fail)
     done
@@ -122,5 +122,62 @@ lemma "bf.consistentDP bf\<^sub>T"
     apply (simp only: prems; fail)
     done
   done
+
+lemma "bf.consistentDP bf\<^sub>T"
+  apply (rule bf.consistentDP_intro, induct_tac rule: bf_inductS', unfold bf\<^sub>T.simps; rule bf.consistentS_checkmem, unfold bf.simps)
+  subgoal premises prems[transfer_rule] by transfer_prover
+  subgoal premises prems[transfer_rule]
+    apply transfer_prover_start
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        defer
+                        apply transfer_step
+                        apply transfer_step
+                        apply transfer_step
+                        apply transfer_step
+                        apply transfer_step
+                        apply transfer_step
+                        apply transfer_step
+                        apply transfer_step
+                        apply transfer_step
+                        apply transfer_step
+                        apply transfer_step
+                        apply transfer_step
+                        apply transfer_step
+                        apply transfer_step
+                        apply transfer_step
+
 end
 end
