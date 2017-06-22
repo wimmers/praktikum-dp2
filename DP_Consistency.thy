@@ -95,7 +95,7 @@ term 0 (**)
   (** Transfer rules **)
 lemma return_transfer[transfer_rule]:
   "(R ===>\<^sub>T R) (\<lambda> x. x) return"
-  unfolding rel_fun_def by clarify (fact consistentS_return)
+  unfolding rel_fun_def by (metis consistentS_return)
     
 lemma bind_transfer[transfer_rule]:
   "(consistentS R0 ===> (R0 ===>\<^sub>T R1) ===> consistentS R1) (\<lambda>v f. f v) (op \<bind>)"
