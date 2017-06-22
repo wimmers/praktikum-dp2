@@ -19,7 +19,7 @@ fun bf :: "nat\<times>nat \<Rightarrow> int" where
     fold
       min
       (map
-        (\<lambda>i. plus (W i j) (bf (k, i)))
+        (\<lambda>i. plus (W i j) (id (\<lambda>i'. bf (k, i')) i))
         (upt 0 n))
       (bf (k, j))"
 thm bf.simps
@@ -31,7 +31,7 @@ fun bf\<^sub>T :: "nat\<times>nat \<Rightarrow>\<^sub>T int" where
     \<langle>fold\<^sub>T\<rangle>
     . \<langle>min\<^sub>T\<rangle>
     . (\<langle>map\<^sub>T\<rangle>
-      . \<langle>\<lambda>i. \<langle>plus\<^sub>T\<rangle> . \<langle>W i j\<rangle> . (bf\<^sub>T (k, i))\<rangle>
+      . \<langle>\<lambda>i. \<langle>plus\<^sub>T\<rangle> . \<langle>W i j\<rangle> . (id (\<lambda>i'. bf\<^sub>T (k, i')) i)\<rangle>
       . (\<langle>upt\<^sub>T\<rangle> . \<langle>0\<rangle> . \<langle>n\<rangle>))
     . (bf\<^sub>T (k, j))"
 term 0 (**)
@@ -47,7 +47,7 @@ term 0 (**)
 
 lemma bf_induct:
   "\<lbrakk>\<And>j. P (0, j);
-    \<And>k j. \<lbrakk>\<And>x. P (k, x);
+    \<And>k j. \<lbrakk>\<And>(_::nat) x. P (k, x);
            P (k, j)
            \<rbrakk> \<Longrightarrow> P (Suc k, j)
    \<rbrakk> \<Longrightarrow> P (x::nat\<times>nat)"
@@ -55,30 +55,33 @@ lemma bf_induct:
 
 lemma bf_inductS:
   "\<lbrakk>\<And>j. bf.consistentS op = (bf (0, j)) (bf\<^sub>T (0, j));
-    \<And>k j. \<lbrakk>\<And>x. bf.consistentS op = (bf (k, x)) (bf\<^sub>T (k, x));
+    \<And>k j. \<lbrakk>\<And>(_::nat) x. bf.consistentS op = (bf (k, x)) (bf\<^sub>T (k, x));
            bf.consistentS op = (bf (k, j)) (bf\<^sub>T (k, j))
            \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (Suc k, j)) (bf\<^sub>T (Suc k, j))
    \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (x::nat\<times>nat)) (bf\<^sub>T x)"
   by (fact bf_induct)
 
+(*
 lemma bf_inductS':
   "\<lbrakk>\<And>j. bf.consistentS op = (bf (0, j)) (bf\<^sub>T (0, j));
     \<And>k j. \<lbrakk>K k k k;
            K j j j;
+           (K k ===> op = ===> rel_prod (K k) op =) Pair Pair;
            (rel_prod (K k) op = ===> bf.consistentS op =) bf bf\<^sub>T;
            (rel_prod (K k) (K j) ===> bf.consistentS op =) bf bf\<^sub>T
            \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (Suc k, j)) (bf\<^sub>T (Suc k, j))
    \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (x::nat\<times>nat)) (bf\<^sub>T x)"
   unfolding rel_prod.simps rel_fun_def K_def by (simp add: bf_inductS)
   term 0 (**)
-
-  term 0 (**)
+*)
+  
+  term 0 (**
 lemma "bf.consistentDP bf\<^sub>T"
   apply (rule bf.consistentDP_intro, induct_tac rule: bf_inductS', unfold bf\<^sub>T.simps; rule bf.consistentS_checkmem, unfold bf.simps)
   subgoal premises prems[transfer_rule] by transfer_prover
   subgoal premises prems
     thm prems
-supply [transfer_rule] = prems(1)
+supply [transfer_rule] = prems
     apply transfer_prover_start
       (*
                         defer
@@ -113,10 +116,6 @@ supply [transfer_rule] = prems(1)
                         defer
                         defer
 *)
-    oops
-lemma 
-  assumes "R "
-      term 0 (**
                         apply transfer_step
                         apply transfer_step
                         apply transfer_step
@@ -129,6 +128,12 @@ lemma
                         apply transfer_step
                         apply transfer_step
                         apply transfer_step
+                        apply transfer_step
+    thm prems(3)
+      supply [transfer_rule] = prems(3)
+                        apply transfer_step
+      apply transfer_step
+      
       thm prems
       (* going wrong here *)
       (* bf\<^sub>T (Pair k i) should be proved directly by prems(1) rather than be separated *)
