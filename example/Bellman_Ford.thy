@@ -17,23 +17,23 @@ fun bf :: "nat\<times>nat \<Rightarrow> int" where
   "bf (0, j) = W 0 j"
 | "bf (Suc k, j) =
     fold
-      min
-      (map
-        (\<lambda>i. plus (W i j) (id (\<lambda>i'. bf (k, i')) i))
-        (upt 0 n))
-      (bf (k, j))"
+    . (min)
+    . (map
+        . (\<lambda>i. plus . (W . i . j) . (bf (k, i)))
+        . (upt . 0 . n))
+    . (bf (k, j))"
 thm bf.simps
 term 0 (**)
   
 fun bf\<^sub>T :: "nat\<times>nat \<Rightarrow>\<^sub>T int" where
-  "bf\<^sub>T$ (0, j) =CHECKMEM= \<langle>W 0 j\<rangle>"
+  "bf\<^sub>T$ (0, j) =CHECKMEM= \<langle>W 0 j\<rangle>\<^sub>T"
 | "bf\<^sub>T$ (Suc k, j) =CHECKMEM=
-    \<langle>fold\<^sub>T\<rangle>
-    . \<langle>min\<^sub>T\<rangle>
-    . (\<langle>map\<^sub>T\<rangle>
-      . \<langle>\<lambda>i. \<langle>plus\<^sub>T\<rangle> . \<langle>W i j\<rangle> . (id (\<lambda>i'. bf\<^sub>T (k, i')) i)\<rangle>
-      . (\<langle>upt\<^sub>T\<rangle> . \<langle>0\<rangle> . \<langle>n\<rangle>))
-    . (bf\<^sub>T (k, j))"
+    \<langle>fold\<^sub>T\<rangle>\<^sub>T
+    .\<^sub>T \<langle>min\<^sub>T\<rangle>\<^sub>T
+    .\<^sub>T (\<langle>map\<^sub>T\<rangle>\<^sub>T
+      .\<^sub>T \<langle>\<lambda>i. \<langle>plus\<^sub>T\<rangle>\<^sub>T .\<^sub>T (\<langle>\<lambda>\<^sub>T i j. W i j\<rangle>\<^sub>T .\<^sub>T \<langle>i\<rangle>\<^sub>T .\<^sub>T \<langle>j\<rangle>\<^sub>T) .\<^sub>T (bf\<^sub>T (k, i))\<rangle>\<^sub>T
+      .\<^sub>T (\<langle>upt\<^sub>T\<rangle>\<^sub>T .\<^sub>T \<langle>0\<rangle>\<^sub>T .\<^sub>T \<langle>n\<rangle>\<^sub>T))
+    .\<^sub>T (bf\<^sub>T (k, j))"
 term 0 (**)
   
 interpretation bf: dp_consistency bf .
@@ -47,7 +47,7 @@ term 0 (**)
 
 lemma bf_induct:
   "\<lbrakk>\<And>j. P (0, j);
-    \<And>k j. \<lbrakk>\<And>(_::nat) x. P (k, x);
+    \<And>k j. \<lbrakk>\<And>x. P (k, x);
            P (k, j)
            \<rbrakk> \<Longrightarrow> P (Suc k, j)
    \<rbrakk> \<Longrightarrow> P (x::nat\<times>nat)"
@@ -55,7 +55,7 @@ lemma bf_induct:
 
 lemma bf_inductS:
   "\<lbrakk>\<And>j. bf.consistentS op = (bf (0, j)) (bf\<^sub>T (0, j));
-    \<And>k j. \<lbrakk>\<And>(_::nat) x. bf.consistentS op = (bf (k, x)) (bf\<^sub>T (k, x));
+    \<And>k j. \<lbrakk>\<And>x. bf.consistentS op = (bf (k, x)) (bf\<^sub>T (k, x));
            bf.consistentS op = (bf (k, j)) (bf\<^sub>T (k, j))
            \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (Suc k, j)) (bf\<^sub>T (Suc k, j))
    \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (x::nat\<times>nat)) (bf\<^sub>T x)"
@@ -74,48 +74,53 @@ lemma bf_inductS':
   unfolding rel_prod.simps rel_fun_def K_def by (simp add: bf_inductS)
   term 0 (**)
 *)
-  
-  term 0 (**
+lemma bf_inductS_l:
+  "\<lbrakk>\<And>j. bf.consistentS op = (bf (0, j)) (bf\<^sub>T (0, j));
+    \<And>k j. \<lbrakk>(op = ===> bf.consistentS op =) (\<lambda>i'. bf (k, i')) (\<lambda>i'. bf\<^sub>T (k, i'));
+           bf.consistentS op = (bf (k, j)) (bf\<^sub>T (k, j))
+           \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (Suc k, j)) (bf\<^sub>T (Suc k, j))
+   \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (x::nat\<times>nat)) (bf\<^sub>T x)"
+  unfolding rel_fun_def by (metis bf_inductS)
+
+term 0 (**)
+
 lemma "bf.consistentDP bf\<^sub>T"
-  apply (rule bf.consistentDP_intro, induct_tac rule: bf_inductS', unfold bf\<^sub>T.simps; rule bf.consistentS_checkmem, unfold bf.simps)
+  apply (rule bf.consistentDP_intro, induct_tac rule: bf_inductS_l, unfold bf\<^sub>T.simps; rule bf.consistentS_checkmem, unfold bf.simps)
   subgoal premises prems[transfer_rule] by transfer_prover
-  subgoal premises prems
-    thm prems
-supply [transfer_rule] = prems
-    apply transfer_prover_start
-      (*
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
+  subgoal
+    (*
+    thm bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD]
+    apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD, where ?R0.2="op ="])
+    subgoal
+      apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD, where ?R0.2="op ="])
+      subgoal
+        apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
+          apply (rule bf.return_transfer[THEN rel_funD])
 *)
+    apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
+     apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
+      apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
+       apply (rule bf.return_transfer[THEN rel_funD])
+       apply (rule bf.fold_transfer[])
+      apply (rule bf.return_transfer[THEN rel_funD])
+      apply (rule bf.min_transfer[])
+     apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
+      apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
+       apply (rule bf.return_transfer[THEN rel_funD])
+       apply (rule bf.map_transfer[])
+      apply (rule bf.return_transfer[THEN rel_funD])
+      apply (rule rel_funI[of "op ="])
+      apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
+       apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
+        apply (rule bf.return_transfer[THEN rel_funD])
+        apply (rule bf.plus_transfer[])
+       apply (rule bf.return_transfer[THEN rel_funD])
+       apply (simp only:)
+      
+    oops
+      lemma "\<And>x. "
+      
+term 0 (*
                         apply transfer_step
                         apply transfer_step
                         apply transfer_step

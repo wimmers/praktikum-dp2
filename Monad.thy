@@ -5,7 +5,7 @@ begin
 datatype ('M, 'a) state = State (runState: "'M \<Rightarrow> 'a \<times> 'M")
 term 0 (**)
 
-definition return :: "'a \<Rightarrow> ('M, 'a) state" ("\<langle>_\<rangle>") where
+definition return :: "'a \<Rightarrow> ('M, 'a) state" where
   "return a \<equiv> State (\<lambda>M. (a, M))"
 term 0 (**)
 
@@ -52,7 +52,7 @@ lemma bind_assoc:
   unfolding bind_def by (auto split: prod.split)
 
 lemma left_identity:
-  "\<langle>v\<rangle> \<bind> k = k v"
+  "return v \<bind> k = k v"
   unfolding return_def bind_def by simp
 
 lemma right_identity:
