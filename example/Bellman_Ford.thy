@@ -176,7 +176,7 @@ lemma "bf.consistentDP bf\<^sub>T"
                         apply transfer_step
                         apply transfer_step
                         apply transfer_step
-                        apply transfer_step
+                        apply transfer_step (*?Rp38 becomes (K j), but it should be (op =)*)
                         apply transfer_step
 
 end
