@@ -71,112 +71,12 @@ lemma bf_inductS':
            \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (Suc k, j)) (bf\<^sub>T (Suc k, j))
    \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (x::nat\<times>nat)) (bf\<^sub>T x)"
   unfolding rel_prod.simps rel_fun_def K_def by (simp add: bf_inductS)
-  term 0 (**)
-
-lemma bf_inductS_l:
-  "\<lbrakk>\<And>j. bf.consistentS op = (bf (0, j)) (bf\<^sub>T (0, j));
-    \<And>k j. \<lbrakk>(op = ===> bf.consistentS op =) (\<lambda>i'. bf (k, i')) (\<lambda>i'. bf\<^sub>T (k, i'));
-           bf.consistentS op = (bf (k, j)) (bf\<^sub>T (k, j))
-           \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (Suc k, j)) (bf\<^sub>T (Suc k, j))
-   \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (x::nat\<times>nat)) (bf\<^sub>T x)"
-  unfolding rel_fun_def by (metis bf_inductS)
-
 term 0 (**)
-
-lemma "bf.consistentDP bf\<^sub>T"
-  apply (rule bf.consistentDP_intro, induct_tac rule: bf_inductS, unfold bf\<^sub>T.simps; rule bf.consistentS_checkmem, unfold bf.simps)
-  subgoal premises prems
-    apply (rule bf.return_transfer[THEN rel_funD])
-    apply (simp only:; fail)
-    done
-  subgoal premises prems
-    apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
-     apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
-      apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
-       apply (rule bf.return_transfer[THEN rel_funD])
-       apply (rule bf.fold_transfer[])
-      apply (rule bf.return_transfer[THEN rel_funD])
-      apply (rule bf.min_transfer[])
-     apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
-      apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
-       apply (rule bf.return_transfer[THEN rel_funD])
-       apply (rule bf.map_transfer[])
-      apply (rule bf.return_transfer[THEN rel_funD])
-      apply (rule rel_funI[of "op ="])
-      apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
-       apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
-        apply (rule bf.return_transfer[THEN rel_funD])
-        apply (rule bf.plus_transfer[])
-       apply (rule bf.return_transfer[THEN rel_funD])
-       apply (simp only:; fail)
-      apply (simp only: prems; fail)
-     apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
-      apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
-       apply (rule bf.return_transfer[THEN rel_funD])
-    apply (rule bf.upt_transfer[])
-    apply (rule bf.return_transfer[THEN rel_funD])
-    apply (simp only:; fail)
-    apply (rule bf.return_transfer[THEN rel_funD])
-     apply (simp only:; fail)
-    apply (simp only: prems; fail)
-    done
-  done
 
 lemma "bf.consistentDP bf\<^sub>T"
   apply (rule bf.consistentDP_intro, induct_tac rule: bf_inductS', unfold bf\<^sub>T.simps; rule bf.consistentS_checkmem, unfold bf.simps)
   subgoal premises prems[transfer_rule] by transfer_prover
-  subgoal premises prems[transfer_rule]
-    apply transfer_prover_start
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        defer
-                        apply transfer_step
-                        apply transfer_step
-                        apply transfer_step
-                        apply transfer_step
-                        apply transfer_step
-                        apply transfer_step
-                        apply transfer_step
-                        apply transfer_step
-                        apply transfer_step
-                        apply transfer_step
-                        apply transfer_step
-                        apply transfer_step
-                        apply transfer_step
-                        apply transfer_step (*?Ro38 becomes (K j), but it should be (op =)*)
-                        apply transfer_step
-      oops
-end
+  subgoal premises prems[transfer_rule] by transfer_prover
+  done
+
 end
