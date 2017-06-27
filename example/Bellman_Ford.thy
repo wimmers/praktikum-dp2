@@ -1,5 +1,5 @@
 theory Bellman_Ford
-  imports "../DP_Lifting" "../DP_Consistency"
+  imports "../DP_Lifting" "../DP_Consistency" "../DP_Proof"
 begin
   
 consts n :: nat
@@ -17,23 +17,23 @@ fun bf :: "nat\<times>nat \<Rightarrow> int" where
   "bf (0, j) = W 0 j"
 | "bf (Suc k, j) =
     fold
-    . (min)
-    . (map
-        . (\<lambda>i. plus . (W i j) . (bf (k, i)))
-        . (upt . 0 . n))
-    . (bf (k, j))"
+      (min)
+      (map
+          (\<lambda>i. plus (W i j) (bf (k, i)))
+          (upt 0 n))
+      (bf (k, j))"
 thm bf.simps
 term 0 (**)
   
 fun bf\<^sub>T :: "nat\<times>nat \<Rightarrow>\<^sub>T int" where
-  "bf\<^sub>T$ (0, j) =CHECKMEM= \<langle>W 0 j\<rangle>\<^sub>T"
+  "bf\<^sub>T$ (0, j) =CHECKMEM= \<langle>W 0 j\<rangle>"
 | "bf\<^sub>T$ (Suc k, j) =CHECKMEM=
-    \<langle>fold\<^sub>T\<rangle>\<^sub>T
-    .\<^sub>T \<langle>min\<^sub>T\<rangle>\<^sub>T
-    .\<^sub>T (\<langle>map\<^sub>T\<rangle>\<^sub>T
-      .\<^sub>T \<langle>\<lambda>i. \<langle>plus\<^sub>T\<rangle>\<^sub>T .\<^sub>T \<langle>W i j\<rangle>\<^sub>T .\<^sub>T (bf\<^sub>T (k, i))\<rangle>\<^sub>T
-      .\<^sub>T (\<langle>upt\<^sub>T\<rangle>\<^sub>T .\<^sub>T \<langle>0\<rangle>\<^sub>T .\<^sub>T \<langle>n\<rangle>\<^sub>T))
-    .\<^sub>T (bf\<^sub>T (k, j))"
+    fold\<^sub>T
+    . min\<^sub>T
+    . (map\<^sub>T
+      . (\<lambda>\<^sub>Ti. plus\<^sub>T . \<langle>W i j\<rangle> . (bf\<^sub>T (k, i)))
+      . (upt\<^sub>T . \<langle>0\<rangle> . \<langle>n\<rangle>))
+    . (bf\<^sub>T (k, j))"
 term 0 (**)
   
 interpretation bf: dp_consistency bf .
@@ -74,9 +74,6 @@ lemma bf_inductS':
 term 0 (**)
 
 lemma "bf.consistentDP bf\<^sub>T"
-  apply (rule bf.consistentDP_intro, induct_tac rule: bf_inductS', unfold bf\<^sub>T.simps; rule bf.consistentS_checkmem, unfold bf.simps)
-  subgoal premises prems[transfer_rule] by transfer_prover
-  subgoal premises prems[transfer_rule] by transfer_prover
-  done
+  by (dp_match induct: bf_inductS' simp: bf.simps simp\<^sub>T: bf\<^sub>T.simps)
 
 end

@@ -8,25 +8,20 @@ type_synonym ('a,'b) dpfun = "'a ==('a\<rightharpoonup>'b)\<Longrightarrow> 'b" 
 term 0 (**)
   
   (* Basics *)
-notation id ("\<langle>_\<rangle>")
-notation Monad.return ("\<langle>_\<rangle>\<^sub>T")
+notation Monad.return ("\<langle>_\<rangle>")
 
 syntax
   "_lambda\<^sub>T" :: "[pttrns, 'a] \<Rightarrow> logic" ("(3\<lambda>\<^sub>T_./ _)" [0, 3] 3)
 translations
   "\<lambda>\<^sub>T v vs. e" \<rightharpoonup> "\<lambda>\<^sub>T v. \<lambda>\<^sub>T vs. e"
-  "\<lambda>\<^sub>T v. e" \<rightharpoonup> "\<lambda> v. \<langle>e\<rangle>\<^sub>T"
+  "\<lambda>\<^sub>T v. e" \<rightharpoonup> "\<langle>\<lambda> v. e\<rangle>"
 
-definition fun_app :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a \<Rightarrow> 'b" (infixl "." 999) where
-  "fun_app \<equiv> \<lambda> f x. f x"
-term 0 (**)
-  
-definition fun_app_lifted :: "('M,'a =='M\<Longrightarrow> 'b) state \<Rightarrow> ('M,'a) state \<Rightarrow> ('M,'b) state" (infixl ".\<^sub>T" 999) where
-  "f\<^sub>T .\<^sub>T x\<^sub>T \<equiv> do { f \<leftarrow> f\<^sub>T; x \<leftarrow> x\<^sub>T; f x }"
+definition fun_app_lifted :: "('M,'a =='M\<Longrightarrow> 'b) state \<Rightarrow> ('M,'a) state \<Rightarrow> ('M,'b) state" (infixl "." 999) where
+  "f\<^sub>T . x\<^sub>T \<equiv> do { f \<leftarrow> f\<^sub>T; x \<leftarrow> x\<^sub>T; f x }"
 term 0 (**)
   
 lemma fun_app_lifted_elim:
-  assumes "runState (f\<^sub>T .\<^sub>T x\<^sub>T) M = (v, Mv)" "runState f\<^sub>T M = (f, Mf)"
+  assumes "runState (f\<^sub>T . x\<^sub>T) M = (v, Mv)" "runState f\<^sub>T M = (f, Mf)"
   obtains x Mx where "runState x\<^sub>T Mf = (x, Mx)" and "runState (f x) Mx = (v, Mv)"
   using assms unfolding fun_app_lifted_def bind_def by (auto split: prod.splits)
 term 0 (**)
@@ -54,91 +49,91 @@ begin
   
   (* Auxiliary *)
 definition unlift_' :: "'a \<Rightarrow> ('M, 'a) state" where
-  "unlift_' x \<equiv> \<langle>x\<rangle>\<^sub>T"
+  "unlift_' x \<equiv> \<langle>x\<rangle>"
 definition unlift_3 :: "('a =='M\<Longrightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> ('M, 'b) state)" where
-  "unlift_3 f \<equiv> \<lambda>v0. \<langle>f\<rangle>\<^sub>T .\<^sub>T \<langle>v0\<rangle>\<^sub>T"
+  "unlift_3 f \<equiv> \<lambda>v0. \<langle>f\<rangle> . \<langle>v0\<rangle>"
 definition unlift_33 :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'c) \<Rightarrow> ('a \<Rightarrow> 'b \<Rightarrow> ('M, 'c) state)" where
-  "unlift_33 f \<equiv> \<lambda>v0 v1. \<langle>f\<rangle>\<^sub>T .\<^sub>T \<langle>v0\<rangle>\<^sub>T .\<^sub>T \<langle>v1\<rangle>\<^sub>T"
+  "unlift_33 f \<equiv> \<lambda>v0 v1. \<langle>f\<rangle> . \<langle>v0\<rangle> . \<langle>v1\<rangle>"
   
-definition lift_' :: "'a \<Rightarrow> 'a " where
-  "lift_' x \<equiv> x"
-definition lift_3 :: "('a \<Rightarrow> 'b) \<Rightarrow> ('a =='M\<Longrightarrow> 'b)" where
-  "lift_3 f \<equiv> \<lambda>\<^sub>T x. f x"
-definition lift_33 :: "('a \<Rightarrow> 'b \<Rightarrow> 'c) \<Rightarrow> ('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'c)" where
-  "lift_33 f \<equiv> \<lambda>\<^sub>T x0 x1. f x0 x1"
-definition lift_333 :: "('a \<Rightarrow> 'b \<Rightarrow> 'c \<Rightarrow> 'd) \<Rightarrow> ('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'c =='M\<Longrightarrow> 'd)" where
-  "lift_333 f \<equiv> \<lambda>\<^sub>T x0 x1 x2. f x0 x1 x2"
+definition lift_' :: "'a \<Rightarrow> ('M, 'a) state" where
+  "lift_' x \<equiv> \<langle>x\<rangle>"
+definition lift_3 :: "('a \<Rightarrow> 'b) \<Rightarrow> ('M, 'a =='M\<Longrightarrow> 'b) state" where
+  "lift_3 f \<equiv> \<lambda>\<^sub>T x. \<langle>f x\<rangle>"
+definition lift_33 :: "('a \<Rightarrow> 'b \<Rightarrow> 'c) \<Rightarrow> ('M, 'a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'c) state" where
+  "lift_33 f \<equiv> \<lambda>\<^sub>T x0 x1. \<langle>f x0 x1\<rangle>"
+definition lift_333 :: "('a \<Rightarrow> 'b \<Rightarrow> 'c \<Rightarrow> 'd) \<Rightarrow> ('M, 'a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'c =='M\<Longrightarrow> 'd) state" where
+  "lift_333 f \<equiv> \<lambda>\<^sub>T x0 x1 x2. \<langle>f x0 x1 x2\<rangle>"
 term 0 (**)
   
   (* HOL *)
-definition If\<^sub>T :: "bool =='M\<Longrightarrow> 'a =='M\<Longrightarrow> 'a =='M\<Longrightarrow> 'a" where
-  "If\<^sub>T \<equiv> \<lambda>\<^sub>T P x y. If P x y"
+definition If\<^sub>T :: "('M, bool =='M\<Longrightarrow> 'a =='M\<Longrightarrow> 'a =='M\<Longrightarrow> 'a) state" where
+  "If\<^sub>T \<equiv> lift_333 If"
 
 thm comp_def
-definition comp\<^sub>T :: "('b =='M\<Longrightarrow> 'c) =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'c)" where
-  "comp\<^sub>T \<equiv> \<lambda>\<^sub>T f g. (\<lambda>x. \<langle>f\<rangle>\<^sub>T .\<^sub>T (\<langle>g\<rangle>\<^sub>T .\<^sub>T \<langle>x\<rangle>\<^sub>T))"
+definition comp\<^sub>T :: "('M, ('b =='M\<Longrightarrow> 'c) =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'c)) state" where
+  "comp\<^sub>T \<equiv> \<lambda>\<^sub>T f g x. \<langle>f\<rangle> . (\<langle>g\<rangle> . \<langle>x\<rangle>)"
   
 thm id_def
-definition id\<^sub>T :: "'a =='M\<Longrightarrow> 'a" where
-  "id\<^sub>T \<equiv> \<lambda>\<^sub>T x. x"
+definition id\<^sub>T :: "('M, 'a =='M\<Longrightarrow> 'a) state" where
+  "id\<^sub>T \<equiv> lift_3 id"
 term 0 (**)
   
   (* List *)
-definition Cons\<^sub>T :: "'a =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'a list" where
-  "Cons\<^sub>T \<equiv> \<lambda>\<^sub>T x xs. Cons x xs"
+definition Cons\<^sub>T :: "('M, 'a =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'a list) state" where
+  "Cons\<^sub>T \<equiv> lift_33 Cons"
   
-definition case_list\<^sub>T :: "'b =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b" where
-  "case_list\<^sub>T \<equiv> \<lambda>\<^sub>T ifNil ifCons. (\<lambda>val. case_list (unlift_' ifNil) (unlift_33 ifCons) val)"
+definition case_list\<^sub>T :: "('M, 'b =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b) state" where
+  "case_list\<^sub>T \<equiv> \<lambda>\<^sub>T ifNil ifCons val. case_list (unlift_' ifNil) (unlift_33 ifCons) val"
   
 primrec map\<^sub>T' :: "('a =='M\<Longrightarrow>'b) \<Rightarrow> 'a list =='M\<Longrightarrow> 'b list" where
-  "(map\<^sub>T' f) [] = \<langle>[]\<rangle>\<^sub>T"
-| "(map\<^sub>T' f) (x#xs) = \<langle>Cons\<^sub>T\<rangle>\<^sub>T .\<^sub>T (\<langle>f\<rangle>\<^sub>T .\<^sub>T \<langle>x\<rangle>\<^sub>T) .\<^sub>T ((map\<^sub>T' f) xs)"
+  "(map\<^sub>T' f) [] = \<langle>[]\<rangle>"
+| "(map\<^sub>T' f) (x#xs) = Cons\<^sub>T . (\<langle>f\<rangle> . \<langle>x\<rangle>) . ((map\<^sub>T' f) xs)"
 lemma
-  "(map\<^sub>T' f) (x#xs) = \<langle>Cons\<^sub>T\<rangle>\<^sub>T .\<^sub>T (\<langle>f\<rangle>\<^sub>T .\<^sub>T \<langle>x\<rangle>\<^sub>T) .\<^sub>T (\<langle>map\<^sub>T' f\<rangle>\<^sub>T .\<^sub>T \<langle>xs\<rangle>\<^sub>T)" unfolding map\<^sub>T'.simps(2) fun_app_lifted_def left_identity ..
+  "(map\<^sub>T' f) (x#xs) = Cons\<^sub>T . (\<langle>f\<rangle> . \<langle>x\<rangle>) . (\<langle>map\<^sub>T' f\<rangle> . \<langle>xs\<rangle>)" unfolding map\<^sub>T'.simps(2) fun_app_lifted_def left_identity ..
     
-definition map\<^sub>T :: "('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b list" where
-  "map\<^sub>T \<equiv> \<lambda>\<^sub>T f\<^sub>T. map\<^sub>T' f\<^sub>T"
+definition map\<^sub>T :: "('M, ('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b list) state" where
+  "map\<^sub>T \<equiv> \<lambda>\<^sub>T f\<^sub>T. \<langle>map\<^sub>T' f\<^sub>T\<rangle>"
   
 primrec fold\<^sub>T' :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b) \<Rightarrow> 'a list =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b" where
-  "(fold\<^sub>T' f) [] = \<langle>id\<^sub>T\<rangle>\<^sub>T"
-| "(fold\<^sub>T' f) (x#xs) = \<langle>comp\<^sub>T\<rangle>\<^sub>T .\<^sub>T ((fold\<^sub>T' f) xs) .\<^sub>T (\<langle>f\<rangle>\<^sub>T .\<^sub>T \<langle>x\<rangle>\<^sub>T)"
+  "(fold\<^sub>T' f) [] = id\<^sub>T"
+| "(fold\<^sub>T' f) (x#xs) = comp\<^sub>T . ((fold\<^sub>T' f) xs) . (\<langle>f\<rangle> . \<langle>x\<rangle>)"
 lemma
-  "(fold\<^sub>T' f) (x#xs) = \<langle>comp\<^sub>T\<rangle>\<^sub>T .\<^sub>T (\<langle>fold\<^sub>T' f\<rangle>\<^sub>T .\<^sub>T \<langle>xs\<rangle>\<^sub>T) .\<^sub>T (\<langle>f\<rangle>\<^sub>T .\<^sub>T \<langle>x\<rangle>\<^sub>T)" unfolding fold\<^sub>T'.simps(2) fun_app_lifted_def left_identity ..
+  "(fold\<^sub>T' f) (x#xs) = comp\<^sub>T . (\<langle>fold\<^sub>T' f\<rangle> . \<langle>xs\<rangle>) . (\<langle>f\<rangle> . \<langle>x\<rangle>)" unfolding fold\<^sub>T'.simps(2) fun_app_lifted_def left_identity ..
     
-definition fold\<^sub>T :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b" where
-  "fold\<^sub>T \<equiv> \<lambda>\<^sub>T f\<^sub>T. fold\<^sub>T' f\<^sub>T"
+definition fold\<^sub>T :: "('M, ('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b) state" where
+  "fold\<^sub>T \<equiv> \<lambda>\<^sub>T f\<^sub>T. \<langle>fold\<^sub>T' f\<^sub>T\<rangle>"
 
-definition upt\<^sub>T :: "nat =='M\<Longrightarrow> nat =='M\<Longrightarrow> nat list" where
-  "upt\<^sub>T \<equiv> \<lambda>\<^sub>T i j. upt i j"
+definition upt\<^sub>T :: "('M, nat =='M\<Longrightarrow> nat =='M\<Longrightarrow> nat list) state" where
+  "upt\<^sub>T \<equiv> lift_33 upt"
 term 0 (**)
   
   (* Option *)
-definition Some\<^sub>T :: "'a =='M\<Longrightarrow> 'a option" where
-  "Some\<^sub>T \<equiv> \<lambda>\<^sub>T x. Some x"
+definition Some\<^sub>T :: "('M, 'a =='M\<Longrightarrow> 'a option) state" where
+  "Some\<^sub>T \<equiv> lift_3 Some"
   
-definition case_option\<^sub>T :: "'b =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a option =='M\<Longrightarrow> 'b" where
-  "case_option\<^sub>T \<equiv> \<lambda>\<^sub>T ifNone ifSome. (\<lambda>val. case_option (unlift_' ifNone) (unlift_3 ifSome) val)"
+definition case_option\<^sub>T :: "('M, 'b =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a option =='M\<Longrightarrow> 'b) state" where
+  "case_option\<^sub>T \<equiv> \<lambda>\<^sub>T ifNone ifSome val. case_option (unlift_' ifNone) (unlift_3 ifSome) val"
 term 0 (**)
   
   (* Prod *)
-definition Pair\<^sub>T :: "'a0 =='M\<Longrightarrow> 'a1 =='M\<Longrightarrow> 'a0\<times>'a1" where
-  "Pair\<^sub>T \<equiv> \<lambda>\<^sub>T x y. Pair x y"
+definition Pair\<^sub>T :: "('M, 'a0 =='M\<Longrightarrow> 'a1 =='M\<Longrightarrow> 'a0\<times>'a1) state" where
+  "Pair\<^sub>T \<equiv> lift_33 Pair"
   
-definition case_prod\<^sub>T :: "('a0 =='M\<Longrightarrow> 'a1 =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> ('a0\<times>'a1) =='M\<Longrightarrow> 'b" where
-  "case_prod\<^sub>T \<equiv> \<lambda>\<^sub>T ifProd. (\<lambda>val. case_prod (unlift_33 ifProd) val)"
+definition case_prod\<^sub>T :: "('M, ('a0 =='M\<Longrightarrow> 'a1 =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> ('a0\<times>'a1) =='M\<Longrightarrow> 'b) state" where
+  "case_prod\<^sub>T \<equiv> \<lambda>\<^sub>T ifProd val. case_prod (unlift_33 ifProd) val"
   
-term "\<langle>case_prod\<^sub>T\<rangle>\<^sub>T .\<^sub>T \<langle>\<lambda>\<^sub>T v0 v1. v0+v1\<rangle>\<^sub>T .\<^sub>T (\<langle>Pair\<^sub>T\<rangle>\<^sub>T .\<^sub>T \<langle>0\<rangle>\<^sub>T .\<^sub>T \<langle>0::int\<rangle>\<^sub>T)"
+term "case_prod\<^sub>T . (\<lambda>\<^sub>T v0 v1. \<langle>v0+v1\<rangle>) . (Pair\<^sub>T . \<langle>0\<rangle> . \<langle>0::int\<rangle>)"
 term 0 (**)
   
   (* Arithmetic *)
-definition min\<^sub>T :: "'a::ord =='M\<Longrightarrow> 'a =='M\<Longrightarrow> 'a" where
-  "min\<^sub>T \<equiv> \<lambda>\<^sub>T x y. min x y"
+definition min\<^sub>T :: "('M, 'a::ord =='M\<Longrightarrow> 'a =='M\<Longrightarrow> 'a) state" where
+  "min\<^sub>T \<equiv> lift_33 min"
   
-definition max\<^sub>T :: "'a::ord =='M\<Longrightarrow> 'a =='M\<Longrightarrow> 'a" where
-  "max\<^sub>T \<equiv> \<lambda>\<^sub>T x y. max x y"
+definition max\<^sub>T :: "('M, 'a::ord =='M\<Longrightarrow> 'a =='M\<Longrightarrow> 'a) state" where
+  "max\<^sub>T \<equiv> lift_33 max"
   
-definition plus\<^sub>T :: "'a::plus =='M\<Longrightarrow> 'a =='M\<Longrightarrow> 'a" where
-  "plus\<^sub>T \<equiv> \<lambda>\<^sub>T x y. plus x y"
+definition plus\<^sub>T :: "('M, 'a::plus =='M\<Longrightarrow> 'a =='M\<Longrightarrow> 'a) state" where
+  "plus\<^sub>T \<equiv> lift_33 plus"
 term 0 (**)
 end
 end
