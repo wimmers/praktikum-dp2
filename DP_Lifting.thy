@@ -79,20 +79,23 @@ definition id\<^sub>T :: "('M, 'a =='M\<Longrightarrow> 'a) state" where
 term 0 (**)
   
   (* List *)
+definition Nil\<^sub>T :: "('M, 'a list) state" where
+  "Nil\<^sub>T \<equiv> lift_' Nil"
+  
 definition Cons\<^sub>T :: "('M, 'a =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'a list) state" where
   "Cons\<^sub>T \<equiv> lift_33 Cons"
-  
+
 definition case_list\<^sub>T :: "('M, 'b =='M\<Longrightarrow> ('a =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b) state" where
   "case_list\<^sub>T \<equiv> \<lambda>\<^sub>T ifNil ifCons val. case_list (unlift_' ifNil) (unlift_33 ifCons) val"
   
-primrec map\<^sub>T' :: "('a =='M\<Longrightarrow>'b) \<Rightarrow> 'a list =='M\<Longrightarrow> 'b list" where
+fun map\<^sub>T' :: "('a =='M\<Longrightarrow>'b) \<Rightarrow> 'a list =='M\<Longrightarrow> 'b list" where
   "(map\<^sub>T' f) [] = \<langle>[]\<rangle>"
-| "(map\<^sub>T' f) (x#xs) = Cons\<^sub>T . (\<langle>f\<rangle> . \<langle>x\<rangle>) . ((map\<^sub>T' f) xs)"
+| "(map\<^sub>T' f) (x#xs) = Cons\<^sub>T . (f x) . ((map\<^sub>T' f) xs)"
 lemma
-  "(map\<^sub>T' f) (x#xs) = Cons\<^sub>T . (\<langle>f\<rangle> . \<langle>x\<rangle>) . (\<langle>map\<^sub>T' f\<rangle> . \<langle>xs\<rangle>)" unfolding map\<^sub>T'.simps(2) fun_app_lifted_def left_identity ..
+  "(map\<^sub>T' f) (x#xs) = Cons\<^sub>T . (f x) . (\<langle>map\<^sub>T' f\<rangle> . \<langle>xs\<rangle>)" unfolding map\<^sub>T'.simps(2) fun_app_lifted_def left_identity ..
     
 definition map\<^sub>T :: "('M, ('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b list) state" where
-  "map\<^sub>T \<equiv> \<lambda>\<^sub>T f\<^sub>T. \<langle>map\<^sub>T' f\<^sub>T\<rangle>"
+  "map\<^sub>T \<equiv> lift_3 map\<^sub>T'"
   
 primrec fold\<^sub>T' :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b) \<Rightarrow> 'a list =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b" where
   "(fold\<^sub>T' f) [] = id\<^sub>T"
@@ -108,6 +111,9 @@ definition upt\<^sub>T :: "('M, nat =='M\<Longrightarrow> nat =='M\<Longrightarr
 term 0 (**)
   
   (* Option *)
+definition None\<^sub>T :: "('M, 'a option) state" where
+  "None\<^sub>T \<equiv> lift_' None"
+
 definition Some\<^sub>T :: "('M, 'a =='M\<Longrightarrow> 'a option) state" where
   "Some\<^sub>T \<equiv> lift_3 Some"
   

@@ -70,10 +70,12 @@ lemma bf_inductS':
            (rel_prod (K k) (K j) ===> bf.consistentS op =) bf bf\<^sub>T
            \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (Suc k, j)) (bf\<^sub>T (Suc k, j))
    \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (x::nat\<times>nat)) (bf\<^sub>T x)"
-  unfolding rel_prod.simps rel_fun_def K_def by (simp add: bf_inductS)
-term 0 (**)
+  unfolding K_def rel_prod.simps using bf_inductS by blast
 
 lemma "bf.consistentDP bf\<^sub>T"
   by (dp_match induct: bf_inductS' simp: bf.simps simp\<^sub>T: bf\<^sub>T.simps)
+term 0 (**)
+
+thm bf.induct bf\<^sub>T.induct
 
 end

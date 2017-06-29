@@ -93,6 +93,7 @@ lemma consistentS_checkmem:
 term 0 (**)
   
   (** Transfer rules **)
+  (* Basics *)
 lemma return_transfer[transfer_rule]:
   "(R ===>\<^sub>T R) (\<lambda>x. x) return"
   unfolding id_def rel_fun_def by (metis consistentS_return)
@@ -138,52 +139,25 @@ lemma lift_333_transfer[transfer_rule]:
   unfolding lift_333_def by transfer_prover
 term 0 (**)
 
+  (* HOL *)
 lemma If_transfer[transfer_rule]:
   "consistentS (op = ===>\<^sub>T R ===>\<^sub>T R ===>\<^sub>T R) If If\<^sub>T"
   unfolding If\<^sub>T_def by transfer_prover
-term 0 (**)
   
-lemma case_option_transfer[transfer_rule]:
-  "consistentS (R1 ===>\<^sub>T (R0 ===>\<^sub>T R1) ===>\<^sub>T rel_option R0 ===>\<^sub>T R1) case_option case_option\<^sub>T"
-  unfolding case_option\<^sub>T_def by transfer_prover
-    
-term 0 (**)
-  
-lemma case_list_transfer[transfer_rule]:
-  "consistentS (R1 ===>\<^sub>T (R0 ===>\<^sub>T list_all2 R0 ===>\<^sub>T R1) ===>\<^sub>T list_all2 R0 ===>\<^sub>T R1) case_list case_list\<^sub>T"
-  unfolding case_list\<^sub>T_def by transfer_prover
-term 0 (**)
-  
-lemma case_prod_transfer[transfer_rule]:
-  "consistentS ((R0 ===>\<^sub>T R1 ===>\<^sub>T R2) ===>\<^sub>T rel_prod R0 R1 ===>\<^sub>T R2) case_prod case_prod\<^sub>T"
-  unfolding case_prod\<^sub>T_def by transfer_prover
-term 0 (**)
-  
-term 0 (**)
 lemma id_transfer[transfer_rule]:
   "consistentS (R ===>\<^sub>T R) id id\<^sub>T"
   unfolding id_def id\<^sub>T_def by transfer_prover
+    
+lemma comp_transfer[transfer_rule]:
+  "consistentS ((R1 ===>\<^sub>T R2) ===>\<^sub>T (R0 ===>\<^sub>T R1) ===>\<^sub>T (R0 ===>\<^sub>T R2)) comp comp\<^sub>T"
+  unfolding comp_def comp\<^sub>T_def fun_app_lifted_def by transfer_prover
 term 0 (**)
-  
+
+  (* Arithmetic *)
+
 lemma plus_transfer[transfer_rule]:
   "consistentS (op = ===>\<^sub>T op = ===>\<^sub>T op =) plus plus\<^sub>T"
   unfolding plus\<^sub>T_def by transfer_prover
-term 0 (**)
-  
-lemma Cons_transfer[transfer_rule]:
-  "consistentS (R ===>\<^sub>T list_all2 R ===>\<^sub>T list_all2 R) Cons Cons\<^sub>T"
-  unfolding Cons\<^sub>T_def by transfer_prover
-term 0 (**)
-  
-lemma Some_transfer[transfer_rule]:
-  "consistentS (R ===>\<^sub>T rel_option R) Some Some\<^sub>T"
-  unfolding Some\<^sub>T_def by transfer_prover
-term 0 (**)
-  
-lemma Pair_transfer[transfer_rule]:
-  "consistentS (R0 ===>\<^sub>T R1 ===>\<^sub>T rel_prod R0 R1) Pair Pair\<^sub>T"
-  unfolding Pair\<^sub>T_def by transfer_prover
-term 0 (**)
   
 lemma min_transfer[transfer_rule]:
   "consistentS (op = ===>\<^sub>T op = ===>\<^sub>T op =) min min\<^sub>T"
@@ -192,15 +166,52 @@ lemma min_transfer[transfer_rule]:
 lemma max_transfer[transfer_rule]:
   "consistentS (op = ===>\<^sub>T op = ===>\<^sub>T op =) max max\<^sub>T"
   unfolding max\<^sub>T_def by transfer_prover
+term 0 (**)  
+
+  (* Option *)
+lemma case_option_transfer[transfer_rule]:
+  "consistentS (R1 ===>\<^sub>T (R0 ===>\<^sub>T R1) ===>\<^sub>T rel_option R0 ===>\<^sub>T R1) case_option case_option\<^sub>T"
+  unfolding case_option\<^sub>T_def by transfer_prover
+
+lemma None_transfer[transfer_rule]:
+  "consistentS (rel_option R) None None\<^sub>T"
+  unfolding None\<^sub>T_def by transfer_prover
+
+lemma Some_transfer[transfer_rule]:
+  "consistentS (R ===>\<^sub>T rel_option R) Some Some\<^sub>T"
+  unfolding Some\<^sub>T_def by transfer_prover
+term 0 (**)
+
+  (* List *)  
+lemma case_list_transfer[transfer_rule]:
+  "consistentS (R1 ===>\<^sub>T (R0 ===>\<^sub>T list_all2 R0 ===>\<^sub>T R1) ===>\<^sub>T list_all2 R0 ===>\<^sub>T R1) case_list case_list\<^sub>T"
+  unfolding case_list\<^sub>T_def by transfer_prover
+  
+lemma Nil_transfer[transfer_rule]:
+  "consistentS (list_all2 R) Nil Nil\<^sub>T"
+  unfolding Nil\<^sub>T_def by transfer_prover
+
+lemma Cons_transfer[transfer_rule]:
+  "consistentS (R ===>\<^sub>T list_all2 R ===>\<^sub>T list_all2 R) Cons Cons\<^sub>T"
+  unfolding Cons\<^sub>T_def by transfer_prover
     
 lemma upt_transfer[transfer_rule]:
   "consistentS (op = ===>\<^sub>T op = ===>\<^sub>T list_all2 op =) upt upt\<^sub>T"
   unfolding upt\<^sub>T_def by transfer_prover
-    
-lemma comp_transfer[transfer_rule]:
-  "consistentS ((R1 ===>\<^sub>T R2) ===>\<^sub>T (R0 ===>\<^sub>T R1) ===>\<^sub>T (R0 ===>\<^sub>T R2)) comp comp\<^sub>T"
-  unfolding comp_def comp\<^sub>T_def fun_app_lifted_def by transfer_prover
-    
+term 0 (**)
+  
+  (* Prod *)
+lemma case_prod_transfer[transfer_rule]:
+  "consistentS ((R0 ===>\<^sub>T R1 ===>\<^sub>T R2) ===>\<^sub>T rel_prod R0 R1 ===>\<^sub>T R2) case_prod case_prod\<^sub>T"
+  unfolding case_prod\<^sub>T_def by transfer_prover
+term 0 (**)
+  
+lemma Pair_transfer[transfer_rule]:
+  "consistentS (R0 ===>\<^sub>T R1 ===>\<^sub>T rel_prod R0 R1) Pair Pair\<^sub>T"
+  unfolding Pair\<^sub>T_def by transfer_prover
+term 0 (**)
+
+  (* Combinator *)
 lemma map_transfer[transfer_rule]:
   "consistentS ((R0 ===>\<^sub>T R1) ===>\<^sub>T list_all2 R0 ===>\<^sub>T list_all2 R1) map map\<^sub>T"
 proof -
