@@ -26,6 +26,11 @@ lemma fun_app_lifted_elim:
   using assms unfolding fun_app_lifted_def bind_def by (auto split: prod.splits)
 term 0 (**)
   
+lemma return_app_return:
+  "\<langle>f\<rangle> . \<langle>x\<rangle> = f x"
+  unfolding fun_app_lifted_def left_identity ..
+term 0 (**)
+  
 definition checkmem :: "'param \<Rightarrow> ('param \<rightharpoonup> 'result, 'result) state \<Rightarrow> ('param \<rightharpoonup> 'result, 'result) state" where
   "checkmem param calc \<equiv> do {
     M \<leftarrow> get;

@@ -1,5 +1,5 @@
 theory Test_Map
-  imports "../DP_Lifting"
+  imports "../DP_Consistency"
 begin
 
 function f :: "nat \<Rightarrow> int" where
@@ -10,7 +10,7 @@ termination
   apply (relation "measure size")
   by (auto intro: wf_mlex mlex_less )
 
-lemma [fundef_cong]:
+lemma map\<^sub>T'_cong[fundef_cong]:
   fixes f g
   assumes "\<And>x. x \<in> set xs \<Longrightarrow> f x = g x" "xs = ys"
   shows   "map\<^sub>T' f xs = map\<^sub>T' g ys"
@@ -91,10 +91,11 @@ term map\<^sub>T' term map\<^sub>T
 lemma map\<^sub>T_map\<^sub>T':
   "(map\<^sub>T . (return ff)) = \<langle>map\<^sub>T' ff\<rangle>"
   unfolding map\<^sub>T_def lift_3_def
-    sorry
-
+  sorry
+    
+(*
 lemma [fundef_cong]:
-  fixes f g
+  fixes f g xs ys
   assumes
     "\<And>x xs'. xs' \<in> set_state xs \<Longrightarrow> x \<in> set xs' \<Longrightarrow> f x = g x" "xs = ys"
   shows "map\<^sub>T . (return f) . xs = map\<^sub>T . (return g) . ys"
@@ -119,7 +120,19 @@ lemma [fundef_cong]:
       sorry
     done
   done
+*)
+      
+      (*
+lemma [fundef_cong]:
+  fixes f g xs
+  assumes
+    "\<And>x xs'. xs' \<in> set_state xs \<Longrightarrow> x \<in> set xs' \<Longrightarrow> f x = g x"
+  shows "map\<^sub>T . (return f) . xs = map\<^sub>T . (return g) . xs"
+  sorry
+    term 0 (**)
+*)
 
+(*
 function f\<^sub>T' :: "nat \<Rightarrow>\<^sub>T int" where
   "f\<^sub>T' 0 = return 0"
 | "f\<^sub>T' (Suc i) = undefined (map\<^sub>T . (return f\<^sub>T') . (return ([0..<Suc i])))"
@@ -128,4 +141,28 @@ termination
   apply (relation "measure size")
    apply simp
   apply (simp add: Monad.return_def)
-    by auto
+  by auto
+term 0 (**)
+*)
+    thm map\<^sub>T_def[unfolded lift_3_def]
+  
+context dp_consistency
+begin
+
+lemma map\<^sub>T_return_return_cong:
+  fixes f g xs
+  assumes "\<And>x. x\<in>set xs \<Longrightarrow> f x = g x"
+  shows "map\<^sub>T . \<langle>f\<rangle> . \<langle>xs\<rangle> = map\<^sub>T . \<langle>g\<rangle> . \<langle>xs\<rangle>"
+  unfolding map\<^sub>T_map\<^sub>T' return_app_return 
+  using assms by (auto intro: map\<^sub>T'_cong)
+
+lemma map\<^sub>T_return_upt_cong:
+  fixes f g l r
+  assumes "\<And>x. x\<in>set [l..<r] \<Longrightarrow> f x = g x"
+  shows "map\<^sub>T . \<langle>f\<rangle> . (upt\<^sub>T . \<langle>l\<rangle> . \<langle>r\<rangle>) = map\<^sub>T . \<langle>g\<rangle> . (upt\<^sub>T . \<langle>l\<rangle> . \<langle>r\<rangle>)"
+  unfolding upt\<^sub>T_def lift_33_def return_app_return using assms by (auto intro: map\<^sub>T_return_return_cong)
+end
+  
+fun fe :: "nat \<Rightarrow> nat" where
+  "fe 0 = 0"
+| "fe (Suc x) = undefined (map (\<lambda>x. fe x + 1) [0..<Suc x])"

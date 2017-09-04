@@ -17,10 +17,17 @@ term 0 (**)
   
 definition consistentS :: "('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow> 'a \<Rightarrow> ('param \<rightharpoonup> 'result, 'b) state \<Rightarrow> bool" where
   "consistentS R v s \<equiv> \<forall>M. consistentM M \<longrightarrow> (case runState s M of (v', M') \<Rightarrow> R v v' \<and> consistentM M')"
+  
+definition consistentS_alt :: "('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow> 'a \<Rightarrow> ('param \<rightharpoonup> 'result, 'b) state \<Rightarrow> bool" where
+  "consistentS_alt R v s \<equiv> pred_fun consistentM (pred_prod (R v) consistentM) (runState s)"
+
+lemma "consistentS = consistentS_alt"
+  unfolding consistentS_def consistentS_alt_def
+  by (fastforce split: pred_prod_split)
 term 0 (**)
   
 abbreviation rel_fun_lifted :: "('a \<Rightarrow> 'c \<Rightarrow> bool) \<Rightarrow> ('b \<Rightarrow> 'd \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('c ==_\<Longrightarrow> 'd) \<Rightarrow> bool" (infixr "===>\<^sub>T" 55) where
-  "rel_fun_lifted R R' \<equiv> R ===> consistentS R'"
+  "A ===>\<^sub>T B \<equiv> A ===> consistentS B"
 term 0 (**)
   
 definition consistentDP :: "('param \<Rightarrow>\<^sub>T 'result) \<Rightarrow> bool" where
@@ -104,7 +111,7 @@ lemma bind_transfer[transfer_rule]:
     
 lemma fun_app_lifted_transfer[transfer_rule]:
   "(consistentS (R0 ===>\<^sub>T R1) ===> consistentS R0 ===> consistentS R1) (\<lambda> f x. f x) (op .)"
-  unfolding fun_app_def fun_app_lifted_def by transfer_prover
+  unfolding fun_app_lifted_def by transfer_prover
 
 term 0 (**)
 
