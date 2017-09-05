@@ -20,10 +20,15 @@ definition fun_app_lifted :: "('M,'a =='M\<Longrightarrow> 'b) state \<Rightarro
   "f\<^sub>T . x\<^sub>T \<equiv> do { f \<leftarrow> f\<^sub>T; x \<leftarrow> x\<^sub>T; f x }"
 term 0 (**)
   
+lemma fun_app_lifted_elim1:
+  assumes "runState (f\<^sub>T . x\<^sub>T) M = (v, Mv)"
+  obtains f Mf x Mx where "runState f\<^sub>T M = (f, Mf)" "runState x\<^sub>T Mf = (x, Mx)" and "runState (f x) Mx = (v, Mv)"
+  using assms unfolding fun_app_lifted_def bind_def by (auto split: prod.splits)
+
 lemma fun_app_lifted_elim:
   assumes "runState (f\<^sub>T . x\<^sub>T) M = (v, Mv)" "runState f\<^sub>T M = (f, Mf)"
   obtains x Mx where "runState x\<^sub>T Mf = (x, Mx)" and "runState (f x) Mx = (v, Mv)"
-  using assms unfolding fun_app_lifted_def bind_def by (auto split: prod.splits)
+  using assms by (auto intro: fun_app_lifted_elim1)
 term 0 (**)
   
 lemma return_app_return:
