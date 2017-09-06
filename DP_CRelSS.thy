@@ -110,7 +110,28 @@ proof -
       using rel_mxs_mys mxs_mys by auto
   } from this[THEN crel_ss_intro] show ?thesis .
 qed
+  
+thm map\<^sub>T_cong
 
-end
+lemma crel_ss_cpred_s: 
+  "cpred_s (list_all (\<lambda>x. R x x)) xs\<^sub>T \<longleftrightarrow> crel_ss (list_all2 (\<lambda>x y. x = y \<longrightarrow> R x y)) xs\<^sub>T xs\<^sub>T"
+  unfolding crel_ss_def cpred_s_def_alt
+  unfolding rel_fun_def 
+  unfolding rel_prod_conv 
+  unfolding list.pred_rel eq_onp_def list_all2_conv_all_nth
+  by auto
+    
+corollary wtf: "cpred_s (list_all (\<lambda>x. R (f x) (g x))) xs\<^sub>T \<longleftrightarrow> crel_ss (list_all2 (\<lambda>x y. x = y \<longrightarrow> R (f x) (g y))) xs\<^sub>T xs\<^sub>T"
+  using crel_ss_cpred_s .
+
+corollary map\<^sub>T_cong':
+  assumes "crel_ss (list_all2 op =) xs\<^sub>T xs\<^sub>T"
+  assumes "crel_ss (\<lambda>f g. cpred_s (list_all (\<lambda>x. crel_ss R1 (f x) (g x))) xs\<^sub>T) f\<^sub>T g\<^sub>T"
+  shows "crel_ss (list_all2 R1) (map\<^sub>T . f\<^sub>T . xs\<^sub>T) (map\<^sub>T . g\<^sub>T . xs\<^sub>T)"
+  apply (rule map\<^sub>T_cong)
+  using assms 
+  unfolding wtf
+  .
+ 
 end
 end

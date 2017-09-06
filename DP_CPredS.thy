@@ -10,12 +10,8 @@ begin
 definition cpred_s :: "('a \<Rightarrow> bool) \<Rightarrow> ('param \<rightharpoonup> 'result, 'a) state \<Rightarrow> bool" where
   "cpred_s P s \<equiv> \<forall>M. cmem M \<longrightarrow> (case runState s M of (v', M') \<Rightarrow> P v' \<and> cmem M')"
   
-definition cpred_s_alt :: "('a \<Rightarrow> bool) \<Rightarrow> ('param \<rightharpoonup> 'result, 'a) state \<Rightarrow> bool" where
-  "cpred_s_alt P s \<equiv> pred_fun cmem (pred_prod P cmem) (runState s)"
-  
-lemma "cpred_s_alt = cpred_s"
-  unfolding cpred_s_def cpred_s_alt_def
-  by (fastforce split: pred_prod_split)
+lemma cpred_s_def_alt: "cpred_s P s = pred_fun cmem (pred_prod P cmem) (runState s)"
+  unfolding cpred_s_def by (fastforce split: pred_prod_split)
 term 0(**)
 
 notation pred_fun (infixr "...>" 55)
