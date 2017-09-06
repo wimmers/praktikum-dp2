@@ -126,11 +126,13 @@ corollary wtf: "cpred_s (list_all (\<lambda>x. R (f x) (g x))) xs\<^sub>T \<long
 
 corollary map\<^sub>T_cong':
   assumes "crel_ss (op =) xs\<^sub>T xs\<^sub>T"
-  assumes "crel_ss (\<lambda>f g. cpred_s (list_all (\<lambda>x. crel_ss R1 (f x) (g x))) xs\<^sub>T) f\<^sub>T g\<^sub>T"
+  assumes "crel_ss (\<lambda>f g. cpred_s (\<lambda>xs. \<forall>x\<in>set xs. crel_ss R1 (f x) (g x)) xs\<^sub>T) f\<^sub>T g\<^sub>T"
   shows "crel_ss (list_all2 R1) (map\<^sub>T . f\<^sub>T . xs\<^sub>T) (map\<^sub>T . g\<^sub>T . xs\<^sub>T)"
   apply (rule map\<^sub>T_cong)
   using assms(1)[folded list.rel_eq] assms(2)
+  unfolding list_all_iff[symmetric]
   unfolding wtf
   .
+
 end
 end
