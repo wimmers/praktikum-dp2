@@ -132,6 +132,5 @@ corollary map\<^sub>T_cong':
   using assms(1)[folded list.rel_eq] assms(2)
   unfolding wtf
   .
-
 end
 end
