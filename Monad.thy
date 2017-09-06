@@ -58,4 +58,8 @@ lemma left_identity:
 lemma right_identity:
   "s \<bind> return = s"
   unfolding return_def bind_def by simp
+
+lemma runState_return:
+  "runState (return x) M = (x, M)"
+  unfolding return_def by simp
 end

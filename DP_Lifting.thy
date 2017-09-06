@@ -29,6 +29,11 @@ lemma fun_app_lifted_elim:
   assumes "runState (f\<^sub>T . x\<^sub>T) M = (v, Mv)" "runState f\<^sub>T M = (f, Mf)"
   obtains x Mx where "runState x\<^sub>T Mf = (x, Mx)" and "runState (f x) Mx = (v, Mv)"
   using assms by (auto intro: fun_app_lifted_elim1)
+
+lemma fun_app_lifted_dest:
+  assumes "runState f\<^sub>T M = (f, Mf)" "runState x\<^sub>T Mf = (x, Mx)" "runState (f x) Mx = (v, Mv)"
+  shows "runState (f\<^sub>T . x\<^sub>T) M = (v, Mv)"
+    using assms unfolding fun_app_lifted_def bind_def by auto
 term 0 (**)
   
 lemma return_app_return:
@@ -106,6 +111,10 @@ lemma
     
 definition map\<^sub>T :: "('M, ('a =='M\<Longrightarrow> 'b) =='M\<Longrightarrow> 'a list =='M\<Longrightarrow> 'b list) state" where
   "map\<^sub>T \<equiv> lift_3 map\<^sub>T'"
+
+lemma map\<^sub>T_map\<^sub>T': "map\<^sub>T . f\<^sub>T . xs\<^sub>T = do {f \<leftarrow> f\<^sub>T; xs \<leftarrow> xs\<^sub>T; map\<^sub>T' f xs}"
+  unfolding map\<^sub>T_def lift_3_def fun_app_lifted_def left_identity bind_assoc ..
+term 0 (**)
   
 primrec fold\<^sub>T' :: "('a =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b) \<Rightarrow> 'a list =='M\<Longrightarrow> 'b =='M\<Longrightarrow> 'b" where
   "(fold\<^sub>T' f) [] = id\<^sub>T"

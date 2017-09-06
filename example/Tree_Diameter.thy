@@ -1,5 +1,5 @@
 theory Tree_Diameter
-  imports "../DP_Consistency"
+  imports "../DP_CRelVS"
 begin
 
 datatype tree = Node "(int \<times> tree) list"
@@ -25,7 +25,7 @@ lemma "list_all2 P (x#xs) (y#ys) \<Longrightarrow> P x y \<and> list_all2 P xs y
 
 
 term 0 (**
-lemma "consistentS (list_all2 R ===>\<^sub>T R) hd hd\<^sub>T"
+lemma "crel_vs (list_all2 R ===>\<^sub>T R) hd hd\<^sub>T"
   thm lift_3_transfer
   unfolding hd\<^sub>T_def
   apply transfer_prover_start

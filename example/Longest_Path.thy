@@ -1,5 +1,5 @@
 theory Longest_Path
-  imports "../DP_Lifting" "../DP_Consistency" "../DP_Proof"
+  imports "../DP_Lifting" "../DP_CRelVS" "../DP_Proof"
 begin
 
 context (* Longest path *)

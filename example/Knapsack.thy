@@ -1,5 +1,5 @@
 theory Knapsack
-  imports "../DP_Consistency" "../DP_Proof"
+  imports "../DP_CRelVS" "../DP_Proof"
 begin
 context (* Knapsack *)
   fixes w :: "nat \<Rightarrow> nat"

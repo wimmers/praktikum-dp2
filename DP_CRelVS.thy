@@ -1,4 +1,4 @@
-theory DP_Consistency
+theory DP_CRelVS
   imports "./Monad" "./DP_Lifting"
 begin
 

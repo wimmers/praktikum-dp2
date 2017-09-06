@@ -1,5 +1,5 @@
 theory Grid_Path
-  imports "../DP_Consistency" "../DP_Lifting" "../DP_Proof"
+  imports "../DP_CRelVS" "../DP_Lifting" "../DP_Proof"
 begin
 (*
 definition lift_option_choice :: "('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> 'a option \<Rightarrow> 'a option \<Rightarrow> 'a option" where
@@ -46,7 +46,7 @@ abbreviation min_opt\<^sub>T :: "('M, 'a::ord option =='M\<Longrightarrow> 'a op
   "min_opt\<^sub>T \<equiv> lift_option_choice\<^sub>T . min\<^sub>T"
 
 context dp_consistency begin
-lemma [transfer_rule]: "consistentS ((R ===>\<^sub>T R ===>\<^sub>T R) ===>\<^sub>T rel_option R ===>\<^sub>T rel_option R ===>\<^sub>T rel_option R) lift_option_choice lift_option_choice\<^sub>T"
+lemma [transfer_rule]: "crel_vs ((R ===>\<^sub>T R ===>\<^sub>T R) ===>\<^sub>T rel_option R ===>\<^sub>T rel_option R ===>\<^sub>T rel_option R) lift_option_choice lift_option_choice\<^sub>T"
   unfolding lift_option_choice_def lift_option_choice\<^sub>T_def by transfer_prover
 end
 

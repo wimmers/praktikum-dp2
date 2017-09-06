@@ -1,5 +1,5 @@
-theory DP_Pred
-  imports "./DP_Consistency"
+theory DP_CPredS
+  imports "./DP_CRelVS"
 begin
 context dp_consistency
 begin

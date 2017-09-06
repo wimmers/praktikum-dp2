@@ -1,5 +1,5 @@
 theory Bellman_Ford
-  imports "../DP_Lifting" "../DP_Consistency" "../DP_Proof"
+  imports "../DP_Lifting" "../DP_CRelVS" "../DP_Proof"
 begin
   
 consts n :: nat
@@ -64,22 +64,22 @@ lemma bf_induct:
   by (fact bf\<^sub>T.induct)
 
 lemma bf_inductS:
-  "\<lbrakk>\<And>j. bf.consistentS op = (bf (0, j)) (bf\<^sub>T (0, j));
-    \<And>k j. \<lbrakk>\<And>x. x \<in> set [0..<n] \<Longrightarrow> bf.consistentS op = (bf (k, x)) (bf\<^sub>T (k, x));
-           bf.consistentS op = (bf (k, j)) (bf\<^sub>T (k, j))
-           \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (Suc k, j)) (bf\<^sub>T (Suc k, j))
-   \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (x::nat\<times>nat)) (bf\<^sub>T x)"
+  "\<lbrakk>\<And>j. bf.crel_vs op = (bf (0, j)) (bf\<^sub>T (0, j));
+    \<And>k j. \<lbrakk>\<And>x. x \<in> set [0..<n] \<Longrightarrow> bf.crel_vs op = (bf (k, x)) (bf\<^sub>T (k, x));
+           bf.crel_vs op = (bf (k, j)) (bf\<^sub>T (k, j))
+           \<rbrakk> \<Longrightarrow> bf.crel_vs op = (bf (Suc k, j)) (bf\<^sub>T (Suc k, j))
+   \<rbrakk> \<Longrightarrow> bf.crel_vs op = (bf (x::nat\<times>nat)) (bf\<^sub>T x)"
   by (fact bf_induct)
 
 
 lemma bf_inductS':
-  "\<lbrakk>\<And>j. bf.consistentS op = (bf (0, j)) (bf\<^sub>T (0, j));
+  "\<lbrakk>\<And>j. bf.crel_vs op = (bf (0, j)) (bf\<^sub>T (0, j));
     \<And>k j. \<lbrakk>K k k k;
            K j j j;
-           (rel_prod (K k) (eq_onp (\<lambda>x. x\<in>set [0..<n])) ===> bf.consistentS op =) bf bf\<^sub>T;
-           (rel_prod (K k) (K j) ===> bf.consistentS op =) bf bf\<^sub>T
-           \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (Suc k, j)) (bf\<^sub>T (Suc k, j))
-   \<rbrakk> \<Longrightarrow> bf.consistentS op = (bf (x::nat\<times>nat)) (bf\<^sub>T x)"
+           (rel_prod (K k) (eq_onp (\<lambda>x. x\<in>set [0..<n])) ===> bf.crel_vs op =) bf bf\<^sub>T;
+           (rel_prod (K k) (K j) ===> bf.crel_vs op =) bf bf\<^sub>T
+           \<rbrakk> \<Longrightarrow> bf.crel_vs op = (bf (Suc k, j)) (bf\<^sub>T (Suc k, j))
+   \<rbrakk> \<Longrightarrow> bf.crel_vs op = (bf (x::nat\<times>nat)) (bf\<^sub>T x)"
   unfolding K_def eq_onp_def rel_prod.simps using bf_inductS by blast
 
 lemma "bf.consistentDP bf\<^sub>T"
