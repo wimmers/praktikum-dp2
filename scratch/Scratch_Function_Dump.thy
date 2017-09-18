@@ -223,10 +223,21 @@ local_setup \<open>
 add_fun_cmd
   [(@{binding ff}, SOME "nat \<Rightarrow> nat", NoSyn)]
   [(((Binding.empty, []), "ff 0 = 0"), [], []),
-   (((Binding.empty, []), "ff (Suc x) = Suc (f x)"), [], [])]
+   (((Binding.empty, []), "ff (Suc x) = Suc (ff x)"), [], [])]
   default_config
   false
 \<close>
 term ff
-  thm ff.simps
+thm ff.simps
+  
+local_setup \<open>
+add_fun
+  [(@{binding gg}, SOME @{typ "nat \<Rightarrow> nat"}, NoSyn)]
+  [(((Binding.empty, []), @{prop "gg (0::nat) = (0::nat)"}), [], []),
+   (((Binding.empty, []), @{prop "gg (Suc x) = Suc (gg x)"}), [], [])]
+  default_config
+\<close>
+  
+thm gg.simps
+  
 end
