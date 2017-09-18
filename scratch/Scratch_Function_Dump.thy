@@ -220,6 +220,13 @@ ML \<open>
 val gg_fixes: (binding * typ option * mixfix) list = [(@{binding gg}, SOME @{typ "nat \<Rightarrow> nat"}, NoSyn)];
 val gg_specs: Specification.multi_specs = 
   [(((Binding.empty, []),
+   @{term "Trueprop (gg (0::nat) = (0::nat))"}),
+    [], []),
+   (((Binding.empty, []),
+    @{term "Trueprop (gg (Suc x) = Suc (gg x))"}),
+    [], [])];
+val gg_specs_alt: Specification.multi_specs = 
+  [(((Binding.empty, []),
    Const ("HOL.Trueprop", @{typ "bool \<Rightarrow> prop"}) $
       (Const ("HOL.eq", @{typ "nat \<Rightarrow> nat \<Rightarrow> bool"}) $
         (Free ("gg", @{typ "nat \<Rightarrow> nat"}) $
@@ -290,7 +297,26 @@ ML \<open>
 \<close>
   
 ML \<open>
-@{term "0::nat"}
+@{term "0::nat"};
+@{typ "nat \<Rightarrow> nat"} = Type ("fun", [Type ("Nat.nat", []), Type ("Nat.nat", [])]);
+
+val x = @{typ "nat option \<Rightarrow> int \<Rightarrow> nat list"};
+x |> range_type;
+x |> domain_type;
+x |> dest_funT;
+x |> binder_types;
+x |> body_type;
+x |> strip_type;
+x |> size_of_typ;
+
 \<close>
-  
+term HOL.Trueprop
+term "Trueprop (a=a)"
+term Pure.eq
+ML \<open>
+val eq0 = @{term "Trueprop (gg (0::nat) = (0::nat))"};
+val eq1 = @{term "Trueprop (gg (Suc x) = Suc (gg x))"};
+eq0 |> dest_comb ||>> dest_comb;
+eq0 |> (strip_comb ##> map strip_comb);
+\<close>
 end
