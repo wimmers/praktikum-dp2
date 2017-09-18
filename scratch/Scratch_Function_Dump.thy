@@ -1,6 +1,6 @@
 theory Scratch_Function_Dump
   imports Main
-  keywords "gun" :: thy_goal
+  keywords "gun" :: thy_decl
 begin
   
 ML \<open>
@@ -204,40 +204,52 @@ hd;
 *)
   
 ML \<open>
-
-add_fun_cmd;
-add_fun_cmd [(@{binding ff}, SOME "nat \<Rightarrow> nat", NoSyn)];
-add_fun_cmd
-  [(@{binding ff}, SOME "nat \<Rightarrow> nat", NoSyn)]
-  [(((Binding.empty, []), "<markup>"), [], []),
-  (((Binding.empty, []), "<markup>"), [], [])];
-add_fun_cmd
-  [(@{binding ff}, SOME "nat \<Rightarrow> nat", NoSyn)]
+val ff_cmd_fixes: (binding * string option * mixfix) list = [(@{binding ff}, SOME "nat \<Rightarrow> nat", NoSyn)];
+val ff_cmd_specs: Specification.multi_specs_cmd =
   [(((Binding.empty, []), "ff 0 = 0"), [], []),
-   (((Binding.empty, []), "ff (Suc x) = Suc (f x)"), [], [])]
-  default_config
-  false;
+   (((Binding.empty, []), "ff (Suc x) = Suc (f x)"), [], [])];
 \<close>
-  
+term 0 (**)
 local_setup \<open>
-add_fun_cmd
-  [(@{binding ff}, SOME "nat \<Rightarrow> nat", NoSyn)]
-  [(((Binding.empty, []), "ff 0 = 0"), [], []),
-   (((Binding.empty, []), "ff (Suc x) = Suc (ff x)"), [], [])]
-  default_config
-  false
+add_fun_cmd ff_cmd_fixes ff_cmd_specs default_config false
 \<close>
 term ff
 thm ff.simps
   
-local_setup \<open>
-add_fun
-  [(@{binding gg}, SOME @{typ "nat \<Rightarrow> nat"}, NoSyn)]
+ML \<open>
+val gg_fixes: (binding * typ option * mixfix) list = [(@{binding gg}, SOME @{typ "nat \<Rightarrow> nat"}, NoSyn)];
+val gg_specs: Specification.multi_specs = 
   [(((Binding.empty, []), @{prop "gg (0::nat) = (0::nat)"}), [], []),
-   (((Binding.empty, []), @{prop "gg (Suc x) = Suc (gg x)"}), [], [])]
-  default_config
+   (((Binding.empty, []), @{prop "gg (Suc x) = Suc (gg x)"}), [], [])];
+\<close>
+term 0 (**)
+  
+local_setup \<open>
+add_fun gg_fixes gg_specs default_config
 \<close>
   
 thm gg.simps
+  
+ML \<open>
+@{typ "nat \<Rightarrow> nat"};
+@{prop "3 \<equiv> 4"} = @{term "3 \<equiv> 4"};
+Const;
+Args.term;
+Args.prop;
+Syntax.read_prop;
+(*
+open Syntax_Phases;
+      parse_term = parse_term false,
+      parse_prop = parse_term true,
+*)
+Function.get_info @{context} @{term gg} |> #simps |> the |> map Thm.prop_of;
+
+\<close>
+ML \<open>
+@{prop "3 \<equiv> 4"};
+@{term "3 \<equiv> 4"};
+@{prop "3 = 4"};
+@{term "(3::nat) = 4"};
+\<close>
   
 end
