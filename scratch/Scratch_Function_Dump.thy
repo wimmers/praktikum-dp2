@@ -219,8 +219,26 @@ thm ff.simps
 ML \<open>
 val gg_fixes: (binding * typ option * mixfix) list = [(@{binding gg}, SOME @{typ "nat \<Rightarrow> nat"}, NoSyn)];
 val gg_specs: Specification.multi_specs = 
-  [(((Binding.empty, []), @{prop "gg (0::nat) = (0::nat)"}), [], []),
-   (((Binding.empty, []), @{prop "gg (Suc x) = Suc (gg x)"}), [], [])];
+  [(((Binding.empty, []),
+   Const ("HOL.Trueprop", @{typ "bool \<Rightarrow> prop"}) $
+      (Const ("HOL.eq", @{typ "nat \<Rightarrow> nat \<Rightarrow> bool"}) $
+        (Free ("gg", @{typ "nat \<Rightarrow> nat"}) $
+          Const ("Groups.zero_class.zero",
+                 @{typ "nat"})) $
+        Const ("Groups.zero_class.zero", @{typ "nat"}))),
+    [], []),
+   (((Binding.empty, []),
+    Const ("HOL.Trueprop", @{typ "bool \<Rightarrow> prop"}) $
+      (Const ("HOL.eq", @{typ "nat \<Rightarrow> nat \<Rightarrow> bool"}) $
+        (Free ("gg",
+                @{typ "nat \<Rightarrow> nat"}) $
+          (Const ("Nat.Suc", @{typ "nat \<Rightarrow> nat"}) $
+            Free ("x", @{typ "nat"}))) $
+        (Const ("Nat.Suc", @{typ "nat \<Rightarrow> nat"}) $
+          (Free ("gg",
+                  @{typ "nat \<Rightarrow> nat"}) $
+            Free ("x", @{typ "nat"}))))),
+    [], [])];
 \<close>
 term 0 (**)
   
@@ -243,13 +261,36 @@ open Syntax_Phases;
       parse_prop = parse_term true,
 *)
 Function.get_info @{context} @{term gg} |> #simps |> the |> map Thm.prop_of;
+Const ("HOL.Trueprop", @{typ "bool \<Rightarrow> prop"});
 
+val it =
+   [Const ("HOL.Trueprop", @{typ "bool \<Rightarrow> prop"}) $
+      (Const ("HOL.eq", @{typ "nat \<Rightarrow> nat \<Rightarrow> bool"}) $
+        (Const ("Scratch_Function_Dump.gg",
+                @{typ "nat \<Rightarrow> nat"}) $
+          Const ("Groups.zero_class.zero",
+                 @{typ "nat"})) $
+        Const ("Groups.zero_class.zero", @{typ "nat"})),
+    Const ("HOL.Trueprop", @{typ "bool \<Rightarrow> prop"}) $
+      (Const ("HOL.eq", @{typ "nat \<Rightarrow> nat \<Rightarrow> bool"}) $
+        (Const ("Scratch_Function_Dump.gg",
+                @{typ "nat \<Rightarrow> nat"}) $
+          (Const ("Nat.Suc", @{typ "nat \<Rightarrow> nat"}) $
+            Var (("x", 0), @{typ "nat"}))) $
+        (Const ("Nat.Suc", @{typ "nat \<Rightarrow> nat"}) $
+          (Const ("Scratch_Function_Dump.gg",
+                  @{typ "nat \<Rightarrow> nat"}) $
+            Var (("x", 0), @{typ "nat"}))))];
 \<close>
 ML \<open>
 @{prop "3 \<equiv> 4"};
 @{term "3 \<equiv> 4"};
 @{prop "3 = 4"};
 @{term "(3::nat) = 4"};
+\<close>
+  
+ML \<open>
+@{term "0::nat"}
 \<close>
   
 end
