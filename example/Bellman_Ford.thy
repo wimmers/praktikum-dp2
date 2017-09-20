@@ -52,7 +52,7 @@ context
 begin
 
 definition K :: "'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" where
-  "K x \<equiv> \<lambda> a b. a=x \<and> b=x"
+  "K x \<equiv> eq_onp (op = x)"
 term 0 (**)
 
 lemma bf_induct:
@@ -82,7 +82,20 @@ lemma bf_inductS':
    \<rbrakk> \<Longrightarrow> bf.crel_vs op = (bf (x::nat\<times>nat)) (bf\<^sub>T x)"
   unfolding K_def eq_onp_def rel_prod.simps using bf_inductS by blast
 
+term 0 (*
 lemma "bf.consistentDP bf\<^sub>T"
+  apply ( rule dp_consistency.consistentDP_intro,
+    induct_tac rule: bf_inductS',
+    unfold bf\<^sub>T.simps;
+    rule dp_consistency.crel_vs_checkmem,
+    unfold bf.simps)
+  subgoal
+    by transfer_prover
+  subgoal premises prems[transfer_rule]
+    thm prems
+    apply transfer_prover_start
+      thm fold_cong
+  term 0 (*
   by (dp_match induct: bf_inductS' simp: bf.simps simp\<^sub>T: bf\<^sub>T.simps)
 term 0 (**)
 

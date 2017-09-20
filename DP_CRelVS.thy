@@ -1,6 +1,10 @@
 theory DP_CRelVS
   imports "./Monad" "./DP_Lifting"
 begin
+  
+definition rel_imp :: "('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow> bool" where
+  "rel_imp R R' \<equiv> \<forall>x y. R x y \<longrightarrow> R' x y"
+term 0 (**)
 
 locale dp_consistency =
   fixes dp :: "'param \<Rightarrow> 'result"
@@ -28,8 +32,7 @@ term 0 (**)
 lemma "crel_vs = crel_vs_alt"
   unfolding crel_vs_def crel_vs_alt_def
   by (fastforce split: pred_prod_split)
-term 0 (**)
-  
+
 definition consistentDP :: "('param \<Rightarrow>\<^sub>T 'result) \<Rightarrow> bool" where
   "consistentDP \<equiv> (op = ===> crel_vs op =) dp"
 term 0 (**)
@@ -60,6 +63,11 @@ lemma crel_vs_elim:
   using assms unfolding crel_vs_def by blast
 term 0 (**)
   
+lemma crel_vs_mono:
+  assumes "crel_vs R v s" "rel_imp R R'"
+  shows "crel_vs R' v s"
+  using assms unfolding rel_imp_def by (fastforce intro: crel_vs_intro elim: crel_vs_elim)
+
   (* consistentDP *)
 lemma consistentDP_intro:
   assumes "\<And>param. crel_vs (op =) (dp param) (dp\<^sub>T param)"
@@ -244,7 +252,11 @@ proof -
 qed
   
 definition "and_leftp R P x y \<equiv> R x y \<and> P x"
-  
+
+lemma eq_onp_and_leftp_eq: "eq_onp P x y \<Longrightarrow> and_leftp (op =) P x y"
+  unfolding and_leftp_def eq_onp_def by auto
+term 0 (**)
+
 lemma and_leftp_leftset_intro:
   "list_all2 R xs xs\<^sub>T' \<Longrightarrow> list_all2 (and_leftp R (\<lambda>x. x\<in>set xs)) xs xs\<^sub>T'"
   unfolding list_all2_iff and_leftp_def set_zip by auto
@@ -254,25 +266,64 @@ lemma and_leftp_lefteq_elim:
   assumes "and_leftp R (op = y) x x\<^sub>T'"
   obtains "x = y" "R y x\<^sub>T'"
   using assms unfolding and_leftp_def by auto
-  
-lemma map_transfer_inset[transfer_rule]:
-  "crel_vs ((and_leftp R0 (\<lambda>x. x\<in>set xs) ===>\<^sub>T R1) ===>\<^sub>T and_leftp (list_all2 R0) (op = xs) ===>\<^sub>T (list_all2 R1)) map map\<^sub>T"
+
+lemma and_leftp_lefteq_same:
+  "R x x\<^sub>T' \<Longrightarrow> and_leftp R (op = x) x x\<^sub>T'"
+  unfolding and_leftp_def by auto
+
+lemma and_leftp_crel_vs:
+  "and_leftp (crel_vs R) P x x\<^sub>T \<Longrightarrow> crel_vs (and_leftp R P) x x\<^sub>T"
+  unfolding and_leftp_def by (fastforce intro: crel_vs_intro elim: crel_vs_elim)
+term 0 (**)
+
+lemma map\<^sub>T'_transfer_inset[transfer_rule]:
+  "((and_leftp R0 (\<lambda>x. x\<in>set xs) ===>\<^sub>T R1) ===> and_leftp (list_all2 R0) (op = xs) ===>\<^sub>T (list_all2 R1)) map map\<^sub>T'"
 proof -
   { fix f f\<^sub>T' xs\<^sub>T'
-    assume rx: "list_all2 R0 xs xs\<^sub>T'" and [transfer_rule]: "(and_leftp R0 (\<lambda>x. x\<in>set xs) ===> crel_vs R1) f f\<^sub>T'"
+    assume [transfer_rule]: "(and_leftp R0 (\<lambda>x. x\<in>set xs) ===>\<^sub>T R1) f f\<^sub>T'" and rx: "list_all2 R0 xs xs\<^sub>T'"
     from rx[THEN and_leftp_leftset_intro] have "crel_vs (list_all2 R1) (map f xs) (map\<^sub>T' f\<^sub>T' xs\<^sub>T')"
       apply (induction rule: list_all2_induct; unfold list.map map\<^sub>T'.simps)
       subgoal premises [transfer_rule] by transfer_prover
       subgoal premises [transfer_rule] by transfer_prover
       done
   }
-  hence [transfer_rule]:"((and_leftp R0 (\<lambda>x. x\<in>set xs) ===>\<^sub>T R1) ===> and_leftp (list_all2 R0) (op = xs) ===>\<^sub>T (list_all2 R1)) map map\<^sub>T'" 
+  thus ?thesis
     by (fastforce elim: and_leftp_lefteq_elim)
-  show ?thesis 
-    unfolding map\<^sub>T_def by transfer_prover
+qed
+
+lemma map_transfer_inset':
+  fixes R0 R1 f f\<^sub>T' xs xs\<^sub>T
+  assumes "(and_leftp R0 (\<lambda>x. x\<in>set xs) ===>\<^sub>T R1) f f\<^sub>T'" "crel_vs (list_all2 R0) xs xs\<^sub>T"
+  shows "crel_vs (list_all2 R1) (map f xs) (map\<^sub>T . \<langle>f\<^sub>T'\<rangle> . xs\<^sub>T)"
+    unfolding map\<^sub>T_def
+  supply [transfer_rule] = assms(1) and_leftp_lefteq_same[THEN and_leftp_crel_vs, OF assms(2)]
+  apply transfer_prover_start
+         apply transfer_step
+        apply transfer_step
+         apply transfer_step
+      
+    
+    
+  term 0 (*
+lemma fold_transfer_inset[transfer_rule]:
+  fixes R0 R1 f f\<^sub>T' xs xs\<^sub>T
+  assumes "(and_leftp R0 (\<lambda>x. x\<in>set xs) ===>\<^sub>T R1 ===>\<^sub>T R1) f f\<^sub>T'" "crel_vs (list_all2 R0) xs xs\<^sub>T"
+  shows  "crel_vs (R1 ===>\<^sub>T R1) (fold f xs) (fold\<^sub>T . \<langle>f\<^sub>T'\<rangle> . xs\<^sub>T)"
+proof -
+  { fix f f\<^sub>T' xs\<^sub>T' a b
+    assume [transfer_rule]: "(and_leftp R0 (\<lambda>x. x\<in>set xs) ===>\<^sub>T R1 ===>\<^sub>T R1) f f\<^sub>T'" and rx: "list_all2 R0 xs xs\<^sub>T'"
+    from rx[THEN and_leftp_leftset_intro] have "crel_vs (R1 ===>\<^sub>T R1) (fold f xs) (fold\<^sub>T' f\<^sub>T' xs\<^sub>T')"
+      apply (induction rule: list_all2_induct; unfold fold.simps fold\<^sub>T'.simps)
+      subgoal premises [transfer_rule] by transfer_prover
+      subgoal premises [transfer_rule] by transfer_prover
+      done
+  }
+  hence [transfer_rule]: "((and_leftp R0 (\<lambda>x. x\<in>set xs) ===>\<^sub>T R1 ===>\<^sub>T R1) ===> and_leftp (list_all2 R0) (op = xs) ===>\<^sub>T R1 ===>\<^sub>T R1) fold fold\<^sub>T'" 
+    by (fastforce elim: and_leftp_lefteq_elim)
+  show ?thesis
+    unfolding fold\<^sub>T_def supply [transfer_rule] = assms(1) and_leftp_lefteq_same[THEN and_leftp_crel_vs, OF assms(2)] by transfer_prover    
 qed
   
-  term 0 (*
 end
 end
   
