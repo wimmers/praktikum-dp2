@@ -1,7 +1,8 @@
 theory DP_CPredS
   imports "./DP_CRelVS"
 begin
-context dp_consistency
+locale dp_pred =
+  fixes cmem :: "('param \<rightharpoonup> 'result) \<Rightarrow> bool"
 begin
 context 
   includes lifting_syntax
@@ -49,4 +50,5 @@ lemma fun_app_lifted_transferP:
   oops 
 end
 end
+
 end

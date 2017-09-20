@@ -4,7 +4,8 @@ begin
 term int
 term fold
   
-context dp_consistency
+locale dp_cong =
+  fixes cmem :: "('param \<rightharpoonup> 'result) \<Rightarrow> bool"
 begin
 context
   includes lifting_syntax
@@ -112,27 +113,97 @@ proof -
 qed
   
 thm map\<^sub>T_cong
+  
+interpretation cpred: dp_pred cmem .
 
 lemma crel_ss_cpred_s: 
-  "cpred_s (list_all (\<lambda>x. R x x)) xs\<^sub>T \<longleftrightarrow> crel_ss (list_all2 (\<lambda>x y. x = y \<longrightarrow> R x y)) xs\<^sub>T xs\<^sub>T"
-  unfolding crel_ss_def cpred_s_def_alt
+  "cpred.cpred_s (list_all (\<lambda>x. R x x)) xs\<^sub>T \<longleftrightarrow> crel_ss (list_all2 (\<lambda>x y. x = y \<longrightarrow> R x y)) xs\<^sub>T xs\<^sub>T"
+  unfolding crel_ss_def cpred.cpred_s_def_alt
   unfolding rel_fun_def 
   unfolding rel_prod_conv 
   unfolding list.pred_rel eq_onp_def list_all2_conv_all_nth
   by auto
     
-corollary wtf: "cpred_s (list_all (\<lambda>x. R (f x) (g x))) xs\<^sub>T \<longleftrightarrow> crel_ss (list_all2 (\<lambda>x y. x = y \<longrightarrow> R (f x) (g y))) xs\<^sub>T xs\<^sub>T"
+corollary wtf: "cpred.cpred_s (list_all (\<lambda>x. R (f x) (g x))) xs\<^sub>T \<longleftrightarrow> crel_ss (list_all2 (\<lambda>x y. x = y \<longrightarrow> R (f x) (g y))) xs\<^sub>T xs\<^sub>T"
   using crel_ss_cpred_s .
 
 corollary map\<^sub>T_cong':
   assumes "crel_ss (op =) xs\<^sub>T xs\<^sub>T"
-  assumes "crel_ss (\<lambda>f g. cpred_s (\<lambda>xs. \<forall>x\<in>set xs. crel_ss R1 (f x) (g x)) xs\<^sub>T) f\<^sub>T g\<^sub>T"
+  assumes "crel_ss (\<lambda>f g. cpred.cpred_s (\<lambda>xs. \<forall>x\<in>set xs. crel_ss R1 (f x) (g x)) xs\<^sub>T) f\<^sub>T g\<^sub>T"
   shows "crel_ss (list_all2 R1) (map\<^sub>T . f\<^sub>T . xs\<^sub>T) (map\<^sub>T . g\<^sub>T . xs\<^sub>T)"
-  apply (rule map\<^sub>T_cong)
   using assms(1)[folded list.rel_eq] assms(2)
   unfolding list_all_iff[symmetric]
   unfolding wtf
-  .
+  by (fact map\<^sub>T_cong)
 
+    
+    term 0 (**
+fun test :: "nat \<Rightarrow> nat" where
+  "test 0 = 0"
+| "test (Suc n) = fold (op +) (map test [0..<Suc n]) 0"
+  
+(*
+fun test\<^sub>T :: "nat \<Rightarrow>\<^sub>T nat" where
+  "test\<^sub>T 0 = \<langle>0\<rangle>"
+| "test\<^sub>T (Suc n) = fold\<^sub>T (map\<^sub>T . \<langle>test\<^sub>T\<rangle> . \<langle>[0..<Suc n]\<rangle>)"
+*)
+
+function test\<^sub>T :: "nat \<Rightarrow> ((nat \<rightharpoonup> nat) \<Rightarrow> (nat \<times> (nat \<rightharpoonup> nat)))" where
+  "test\<^sub>T 0 M = runState (checkmem 0 \<langle>0\<rangle>) M"
+| "test\<^sub>T (Suc n) M = runState (checkmem (Suc n) (fold\<^sub>T . plus\<^sub>T . (map\<^sub>T . \<langle>\<lambda>x. State (test\<^sub>T x)\<rangle> . \<langle>[0..<Suc n]\<rangle>) . \<langle>0\<rangle>)) M"
+  by pat_completeness auto
+    
+    lemma ""
+  *)
+    
 end
+end
+
+fun test :: "nat \<Rightarrow> nat" where
+  "test 0 = 0"
+| "test (Suc n) = fold (op +) (map test [0..<Suc n]) 0"
+  
+function (domintros) test\<^sub>T :: "nat \<Rightarrow> ((nat \<rightharpoonup> nat) \<Rightarrow> (nat \<times> (nat \<rightharpoonup> nat)))" where
+  "test\<^sub>T 0 M = runState (checkmem 0 \<langle>0\<rangle>) M"
+| "test\<^sub>T (Suc n) M = runState (checkmem (Suc n) (fold\<^sub>T . plus\<^sub>T . (map\<^sub>T . \<langle>\<lambda>x. State (test\<^sub>T x)\<rangle> . \<langle>[0..<Suc n]\<rangle>) . \<langle>0\<rangle>)) M"
+  by pat_completeness auto
+    
+interpretation dp: dp_consistency test .
+
+lemma
+  fixes n M
+  assumes "dp.cmem M"
+  shows "test\<^sub>T_dom (n, M)"
+  apply (induction n)
+  subgoal using  test\<^sub>T.domintros(1)  by simp
+  subgoal for m 
+    oops
+      
+lemma xx:
+  fixes a P
+  assumes "P 0"
+  assumes "\<And>n. (\<And>x. x < Suc n \<Longrightarrow> P x) \<Longrightarrow> P (Suc n)"
+  shows "\<And>x. x\<le>a \<Longrightarrow> P x"
+  apply (induction a)
+  subgoal using assms(1) by simp
+  subgoal for a x
+    apply (cases "x = Suc a")
+    subgoal using assms(2) by simp
+    subgoal by simp
+    done
+  done
+
+corollary
+  fixes a P
+  assumes "P 0"
+  assumes "\<And>n. (\<And>x. x < Suc n \<Longrightarrow> P x) \<Longrightarrow> P (Suc n)"
+  shows "P a" 
+proof -
+  from assms xx have "\<And>x. x\<le>a \<Longrightarrow> P x"
+    by blast
+  thus ?thesis by auto
+qed
+
+lemma "set_state s = fst ` (range (runState s))"
+  find_theorems set_state
 end
