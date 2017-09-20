@@ -227,7 +227,7 @@ lemma Pair_transfer[transfer_rule]:
 term 0 (**)
 
   (* Combinator *)
-lemma map_transfer[transfer_rule]:
+lemma map_transfer:
   "crel_vs ((R0 ===>\<^sub>T R1) ===>\<^sub>T list_all2 R0 ===>\<^sub>T list_all2 R1) map map\<^sub>T"
 proof -
   have [transfer_rule]: "((R0 ===>\<^sub>T R1) ===> (list_all2 R0 ===>\<^sub>T list_all2 R1)) map map\<^sub>T'"
@@ -239,7 +239,7 @@ proof -
     unfolding map\<^sub>T_def by transfer_prover
 qed
   
-lemma fold_transfer[transfer_rule]:
+lemma fold_transfer:
   "crel_vs ((R0 ===>\<^sub>T R1 ===>\<^sub>T R1) ===>\<^sub>T list_all2 R0 ===>\<^sub>T R1 ===>\<^sub>T R1) fold fold\<^sub>T"
 proof -
   have [transfer_rule]: "((R0 ===>\<^sub>T R1 ===>\<^sub>T R1) ===> list_all2 R0 ===>\<^sub>T R1 ===>\<^sub>T R1) fold fold\<^sub>T'"
@@ -276,8 +276,8 @@ lemma and_leftp_crel_vs:
   unfolding and_leftp_def by (fastforce intro: crel_vs_intro elim: crel_vs_elim)
 term 0 (**)
 
-lemma map\<^sub>T'_transfer_inset[transfer_rule]:
-  "((and_leftp R0 (\<lambda>x. x\<in>set xs) ===>\<^sub>T R1) ===> and_leftp (list_all2 R0) (op = xs) ===>\<^sub>T (list_all2 R1)) map map\<^sub>T'"
+lemma map_transfer_inset:
+   "crel_vs ((and_leftp R0 (\<lambda>x. x\<in>set xs) ===>\<^sub>T R1) ===>\<^sub>T and_leftp (list_all2 R0) (op = xs) ===>\<^sub>T (list_all2 R1)) map map\<^sub>T"
 proof -
   { fix f f\<^sub>T' xs\<^sub>T'
     assume [transfer_rule]: "(and_leftp R0 (\<lambda>x. x\<in>set xs) ===>\<^sub>T R1) f f\<^sub>T'" and rx: "list_all2 R0 xs xs\<^sub>T'"
@@ -287,25 +287,29 @@ proof -
       subgoal premises [transfer_rule] by transfer_prover
       done
   }
-  thus ?thesis
+  hence [transfer_rule]: "((and_leftp R0 (\<lambda>x. x\<in>set xs) ===>\<^sub>T R1) ===> and_leftp (list_all2 R0) (op = xs) ===>\<^sub>T (list_all2 R1)) map map\<^sub>T'" 
     by (fastforce elim: and_leftp_lefteq_elim)
+  show ?thesis
+    unfolding map\<^sub>T_def by transfer_prover
 qed
-
-lemma map_transfer_inset':
+  
+lemma map_transfer_inset_unfolded:
   fixes R0 R1 f f\<^sub>T' xs xs\<^sub>T
   assumes "(and_leftp R0 (\<lambda>x. x\<in>set xs) ===>\<^sub>T R1) f f\<^sub>T'" "crel_vs (list_all2 R0) xs xs\<^sub>T"
   shows "crel_vs (list_all2 R1) (map f xs) (map\<^sub>T . \<langle>f\<^sub>T'\<rangle> . xs\<^sub>T)"
-    unfolding map\<^sub>T_def
-  supply [transfer_rule] = assms(1) and_leftp_lefteq_same[THEN and_leftp_crel_vs, OF assms(2)]
-  apply transfer_prover_start
-         apply transfer_step
-        apply transfer_step
-         apply transfer_step
-      
-    
-    
-  term 0 (*
-lemma fold_transfer_inset[transfer_rule]:
+  apply (rule fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD, where x=xs])
+   apply (rule fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD, where x=f])
+    apply (fact map_transfer_inset)
+   apply (rule crel_vs_return)
+   apply (fact assms(1))
+  apply (rule and_leftp_crel_vs)
+  apply (rule and_leftp_lefteq_same)
+  apply (fact assms(2))
+  done
+
+term 0 (**)
+
+lemma fold_transfer_inset:
   fixes R0 R1 f f\<^sub>T' xs xs\<^sub>T
   assumes "(and_leftp R0 (\<lambda>x. x\<in>set xs) ===>\<^sub>T R1 ===>\<^sub>T R1) f f\<^sub>T'" "crel_vs (list_all2 R0) xs xs\<^sub>T"
   shows  "crel_vs (R1 ===>\<^sub>T R1) (fold f xs) (fold\<^sub>T . \<langle>f\<^sub>T'\<rangle> . xs\<^sub>T)"

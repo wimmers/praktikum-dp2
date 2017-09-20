@@ -82,7 +82,8 @@ lemma bf_inductS':
    \<rbrakk> \<Longrightarrow> bf.crel_vs op = (bf (x::nat\<times>nat)) (bf\<^sub>T x)"
   unfolding K_def eq_onp_def rel_prod.simps using bf_inductS by blast
 
-term 0 (*
+thm eq_onp_to_eq
+  
 lemma "bf.consistentDP bf\<^sub>T"
   apply ( rule dp_consistency.consistentDP_intro,
     induct_tac rule: bf_inductS',
@@ -93,7 +94,28 @@ lemma "bf.consistentDP bf\<^sub>T"
     by transfer_prover
   subgoal premises prems[transfer_rule]
     thm prems
+      supply [transfer_rule] = bf.map_transfer_inset 
     apply transfer_prover_start
+              apply transfer_step
+             apply transfer_step
+            apply transfer_step
+                        apply transfer_step
+    apply transfer_step
+    apply transfer_step
+    apply transfer_step
+                       apply transfer_step
+    apply transfer_step
+                     apply transfer_step
+                    apply transfer_step
+      back
+                   apply transfer_step
+                  supply [transfer_rule] = eq_onp_to_eq
+      
+
+      
+          using bf.map_transfer_inset
+      
+          
       thm fold_cong
   term 0 (*
   by (dp_match induct: bf_inductS' simp: bf.simps simp\<^sub>T: bf\<^sub>T.simps)
