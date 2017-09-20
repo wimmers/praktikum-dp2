@@ -243,41 +243,36 @@ proof -
     unfolding fold\<^sub>T_def by transfer_prover
 qed
   
-definition "KK R P x y \<equiv> R x y \<and> P x"
+definition "and_leftp R P x y \<equiv> R x y \<and> P x"
   
-lemma map_transfer':
-  fixes R0 R1 xs xs\<^sub>T' f f\<^sub>T'
-  assumes "list_all2 (KK R0 (\<lambda>x. x\<in>set xs)) xs xs\<^sub>T'"
-  assumes "((KK R0 (\<lambda>x. x\<in>set xs)) ===> crel_vs R1) f f\<^sub>T'"
-  shows "crel_vs (list_all2 R1) (map f xs) (map\<^sub>T' f\<^sub>T' xs\<^sub>T')"
-    using assms(1)
-    apply (induction rule: list_all2_induct; unfold list.map map\<^sub>T'.simps)
-    subgoal premises prems[transfer_rule] by transfer_prover
-    subgoal premises prems[transfer_rule] supply [transfer_rule] = assms(2) by transfer_prover
-    done
-      
-lemma [transfer_rule]:
-  assumes "list_all2 R xs xs\<^sub>T'"
-  shows "list_all2 (KK R (\<lambda>x. x\<in>set xs)) xs xs\<^sub>T'"
-  using assms
-  unfolding list_all2_iff
-  unfolding KK_def
-  unfolding set_zip
-  by auto
-
-notepad
-begin
-  fix R0::"'a \<Rightarrow> 'b \<Rightarrow> bool" and R1::"'a \<Rightarrow> 'b \<Rightarrow> bool" and R::"'a \<Rightarrow> 'b \<Rightarrow> bool" and f g
-  assume fg: "(R0 ===> R1) f g"
-  assume rr: "\<And>x y. R x y \<Longrightarrow> R0 x y"
-  fix a b
-  assume ab: "R a b"
-  have "R1 (f a) (g b)"
-    supply [transfer_rule] = fg rr ab
-    apply transfer_prover_start
-      apply transfer_step
-     back
-      apply transfer_step
+lemma and_leftp_leftset_intro:
+  "list_all2 R xs xs\<^sub>T' \<Longrightarrow> list_all2 (and_leftp R (\<lambda>x. x\<in>set xs)) xs xs\<^sub>T'"
+  unfolding list_all2_iff and_leftp_def set_zip by auto
+term 0 (**)
+  
+lemma and_leftp_lefteq_elim:
+  assumes "and_leftp R (op = y) x x\<^sub>T'"
+  obtains "x = y" "R y x\<^sub>T'"
+  using assms unfolding and_leftp_def by auto
+  
+lemma map_transfer_inset[transfer_rule]:
+  "crel_vs ((and_leftp R0 (\<lambda>x. x\<in>set xs) ===>\<^sub>T R1) ===>\<^sub>T and_leftp (list_all2 R0) (op = xs) ===>\<^sub>T (list_all2 R1)) map map\<^sub>T"
+proof -
+  { fix f f\<^sub>T' xs\<^sub>T'
+    assume rx: "list_all2 R0 xs xs\<^sub>T'" and [transfer_rule]: "(and_leftp R0 (\<lambda>x. x\<in>set xs) ===> crel_vs R1) f f\<^sub>T'"
+    from rx[THEN and_leftp_leftset_intro] have "crel_vs (list_all2 R1) (map f xs) (map\<^sub>T' f\<^sub>T' xs\<^sub>T')"
+      apply (induction rule: list_all2_induct; unfold list.map map\<^sub>T'.simps)
+      subgoal premises [transfer_rule] by transfer_prover
+      subgoal premises [transfer_rule] by transfer_prover
+      done
+  }
+  hence [transfer_rule]:"((and_leftp R0 (\<lambda>x. x\<in>set xs) ===>\<^sub>T R1) ===> and_leftp (list_all2 R0) (op = xs) ===>\<^sub>T (list_all2 R1)) map map\<^sub>T'" 
+    by (fastforce elim: and_leftp_lefteq_elim)
+  show ?thesis 
+    unfolding map\<^sub>T_def by transfer_prover
+qed
+  
+  term 0 (*
 end
 end
   
