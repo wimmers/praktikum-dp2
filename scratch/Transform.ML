@@ -5,26 +5,44 @@ fun get_rest prefix l =
     if length prefix <= length l andalso l_prefix = prefix then SOME l_postfix else NONE
   end;
 
+fun subst_var_free tm =
+  map_aterms (fn x =>
+    case x of
+      Var ((vn, 0), tp) => Free (vn, tp)
+    | Var _ => raise TERM("nonzero indexname", [x])
+    | _ => x) tm;
+
 infix 9 <$>;
 
 fun state_type M a = Type (@{type_name Monad.state}, [M, a]);
 
 fun extract_lhs (lhs: term) =
   let
-    val (func, all_param) = strip_comb lhs;
+    val (func_head, all_param) = strip_comb lhs;
     val (context, param) = split_last all_param;
   in
-    (func, context, param)
+    (func_head, context, param)
   end;
 
-fun transform simp_thm =
+fun lift_fun term_opt ctxt =
   let
-    val (lhs, rhs) = Thm.full_prop_of simp_thm |> HOLogic.dest_Trueprop |> HOLogic.dest_eq;
-    val (func, func_context, param) = extract_lhs lhs;
+    val func_info =
+      case term_opt of
+        SOME tm => Function.get_info ctxt tm
+      | NONE => Function_Common.import_last_function ctxt |> the;
 
-    val dom_type = type_of param;
-    val ran_type = type_of rhs;
+    val funcT_binding = #fnames func_info |> the_single |> Binding.suffix_name "\<^sub>T";
+    val funcT_name = Binding.name_of funcT_binding;
+
+    val local_func_head = #fs func_info |> the_single;
+    val func_type = local_func_head |> type_of;
+    val (dom_type, ran_type) = dest_funT func_type;
     val mem_type = dom_type --> Type (@{type_name "Option.option"}, [ran_type]);
+    
+    val _ =
+      case ran_type of
+        Type (@{type_name fun}, _) => raise TYPE("ran_type cannot be function", [ran_type], [])
+      | _ => ();
 
     (* TODO: quadratic -> linear *)
     fun return1 bound_types tm =
@@ -61,86 +79,93 @@ fun transform simp_thm =
               Type (@{type_name fun}, _) => raise TYPE("High order domain type", [dom], [tm])
             | _ => Term.abs (Name.uu, dom) (lift_pure_term (dom::bound_types) (incr_boundvars 1 tm $ Bound 0)))
          | _ => tm);
-    
 
-    fun lift_term bound_types tm =
+    val funcT_head = Free (funcT_name, dom_type --> lift_type ran_type);
+
+    fun transform_simp simp_thm =
       let
-        val return = return1 bound_types;
-        val op <$> = app_lifted1 bound_types;
-        
-        fun check_pure tm =
-          if exists_subterm (fn x => x aconv func) tm
-            then NONE
-            else SOME (lift_pure_term bound_types tm);
-
-        fun check_If tm =
-          case tm of
-            If_term $ cond $ true_clause $ false_clause =>
-              if Term.aconv_untyped (If_term, @{term If})
-                then SOME (
-                  Const (@{const_name DP_Lifting.If\<^sub>T}, lift_type (type_of If_term))
-                  <$> lift_term bound_types cond
-                  <$> lift_term bound_types true_clause
-                  <$> lift_term bound_types false_clause
-                )
-                else NONE
-          | If_term =>
-              if Term.aconv_untyped (If_term, @{term If})
-                then raise TERM("outstanding If", [])
-                else NONE;
-
-        fun check_case_prod tm =
-          case tm of
-            case_prod_term $ if_prod $ prod_term =>
-              if Term.aconv_untyped (case_prod_term, @{term case_prod})
-                then SOME (
-                  Const (@{const_name DP_Lifting.case_prod\<^sub>T}, lift_type (type_of case_prod_term))
-                  <$> lift_term bound_types if_prod
-                  <$> lift_term bound_types prod_term
-                )
-                else NONE
-          | case_prod_term =>
-              if Term.aconv_untyped (case_prod_term, @{term case_prod})
-                then raise TERM("outstanding case_prod", [])
-                else NONE;
-
-        fun check_func tm =
+        val (lhs, rhs0) = Thm.full_prop_of simp_thm |> HOLogic.dest_Trueprop |> HOLogic.dest_eq;
+        val rhs = subst_var_free rhs0;
+    
+        val (func_head, func_context, param0) = extract_lhs lhs;
+        val param = subst_var_free param0;
+    
+        fun lift_term bound_types tm =
           let
-            val (func_term, func_args) = strip_comb tm;
+            val return = return1 bound_types;
+            val op <$> = app_lifted1 bound_types;
+            
+            fun check_pure tm =
+              if exists_subterm (fn x => x aconv func_head) tm
+                then NONE
+                else SOME (lift_pure_term bound_types tm);
+    
+            fun check_If tm =
+              case tm of
+                If_term $ cond $ true_clause $ false_clause =>
+                  if Term.aconv_untyped (If_term, @{term If})
+                    then SOME (
+                      Const (@{const_name DP_Lifting.If\<^sub>T}, lift_type (type_of If_term))
+                      <$> lift_term bound_types cond
+                      <$> lift_term bound_types true_clause
+                      <$> lift_term bound_types false_clause
+                    )
+                    else NONE
+              | If_term =>
+                  if Term.aconv_untyped (If_term, @{term If})
+                    then raise TERM("outstanding If", [])
+                    else NONE;
+    
+            fun check_case_prod tm =
+              case tm of
+                case_prod_term $ if_prod $ prod_term =>
+                  if Term.aconv_untyped (case_prod_term, @{term case_prod})
+                    then SOME (
+                      Const (@{const_name DP_Lifting.case_prod\<^sub>T}, lift_type (type_of case_prod_term))
+                      <$> lift_term bound_types if_prod
+                      <$> lift_term bound_types prod_term
+                    )
+                    else NONE
+              | case_prod_term =>
+                  if Term.aconv_untyped (case_prod_term, @{term case_prod})
+                    then raise TERM("outstanding case_prod", [])
+                    else NONE;
+    
+            fun check_func tm =
+              case tm of
+                f $ x => if f aconv local_func_head then SOME (funcT_head $ x) else NONE
+              | _ => if tm aconv local_func_head then SOME (return tm) else
+                      if tm aconv func_head then raise TERM("incomplete function context", [tm]) else NONE;
+    
+            fun check_fallback tm =
+              case tm of
+                Abs (abs_name, abs_tp, abs_body) =>
+                  let
+                    val abs_tp_lifted = lift_type abs_tp
+                  in
+                    SOME (return (Term.abs (abs_name, abs_tp_lifted)
+                      (lift_term (abs_tp_lifted::bound_types) abs_body)))
+                  end
+              | f $ x =>
+                SOME (lift_term bound_types f <$> lift_term bound_types x)
+              | _ => NONE;
+    
+            val checks = [
+              check_pure,
+              check_If,
+              check_case_prod,
+              check_func,
+              check_fallback
+            ];
           in
-            if func aconv func_term
-              then
-                case get_rest func_context func_args of
-                  SOME [] => SOME (return tm)
-                | SOME [_] => SOME tm
-                | SOME _ => raise TERM("internal error, multiple param", [tm])
-                | NONE => raise TERM("incomplete function context", [tm])
-              else NONE
-          end
-
-        fun check_fallback tm =
-          case tm of
-            Abs (abs_name, abs_tp, abs_body) =>
-              let
-                val abs_tp_lifted = lift_type abs_tp
-              in
-                SOME (return (Term.abs (abs_name, abs_tp_lifted)
-                  (lift_term (abs_tp_lifted::bound_types) abs_body)))
-              end
-          | f $ x =>
-            SOME (lift_term bound_types f <$> lift_term bound_types x)
-          | _ => NONE;
-
-        val checks = [
-          check_pure,
-          check_If,
-          check_case_prod,
-          check_func,
-          check_fallback
-        ];
+            get_first (fn check => check tm) checks |> the
+          end;
       in
-        get_first (fn check => check tm) checks |> the
+        HOLogic.mk_eq (funcT_head $ param, lift_term [] rhs) |> HOLogic.mk_Trueprop
       end;
+
+    val func_fixes = [(funcT_binding, SOME (type_of funcT_head), NoSyn)];
+    val func_specs = map (fn simp => (((Binding.empty, []), transform_simp simp), [], [])) (#simps func_info |> the);
   in
-    lift_term [] rhs
+    Function_Fun.add_fun func_fixes func_specs Function_Common.default_config
   end;

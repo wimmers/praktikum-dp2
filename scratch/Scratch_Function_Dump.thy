@@ -27,9 +27,17 @@ fun note_derived (a, atts) (fname, thms) =
 
 fun add_simps fnames post sort extra_qualify label mod_binding moreatts simps lthy =
   let
+    val _ = writeln ("fnames: " ^ @{make_string} fnames);
+    val _ = writeln ("post: " ^ @{make_string} post);
+    val _ = writeln ("sort: " ^ @{make_string} sort);
+    val _ = writeln ("extra_qualify: " ^ @{make_string} extra_qualify);
+    val _ = writeln ("label: " ^ @{make_string} label);
+    val _ = writeln ("mod_binding: " ^ @{make_string} mod_binding);
     val spec = post simps
       |> map (apfst (apsnd (fn ats => moreatts @ ats)))
-      |> map (apfst (apfst extra_qualify))
+      |> map (apfst (apfst extra_qualify));
+    
+    val _ = writeln ("spec: " ^ @{make_string} spec);
 
     val (saved_spec_simps, lthy) =
       fold_map Local_Theory.note spec lthy
@@ -50,6 +58,11 @@ fun prepare_function do_print prep fixspec eqns config lthy =
 
     val fnames = map (fst o fst) fixes0
     val defname = Binding.conglomerate fnames;
+
+    val _ = writeln ("Eqs: " ^ (@{make_string} eqs));
+    val _ = writeln ("fixes: " ^ (@{make_string} fixes));
+    val _ = writeln ("fnames: " ^ (@{make_string} fnames));
+    val _ = writeln ("defname: " ^ (@{make_string} defname));
 
     val FunctionConfig {partials, default, ...} = config
     val _ =
@@ -429,6 +442,11 @@ Pretty.writeln (Pretty.str "adsf");
 default_config;
 @{make_string} 0
 \<close>
+  
+context
+  fixes w :: "nat \<Rightarrow> nat"
+begin
+  
 term 0 (**)
 gun f :: "nat \<Rightarrow> nat" where
   "f 0 = 0"
@@ -632,4 +650,5 @@ ML \<open>
 Thm.close_derivation;
 Thm.derivation_name @{thm spec};
 \<close>  
+end
 end
