@@ -95,9 +95,11 @@ type_of1 ([@{typ nat}], (Bound 0))
   
 ML \<open>
 (* FIXME: placeholder for debugging*)
+(*
 val dom_type = @{typ "nat \<times> nat"};
 val ran_type = @{typ "int"};
 val mem_type = dom_type --> Type (@{type_name "Option.option"}, [ran_type]);
+*)
 (*val (lhs, rhs) = (su0_lhs, su0_rhs);*)
 Library.foldl;
 HOLogic.zero;
@@ -105,14 +107,43 @@ HOLogic.zero;
 SOME 0;
 (case [1,2,3,4] of
   (x::y::(t as z)::u) => t);
-@{term HOL.If}
+@{term HOL.If};
+Proof_Context.prepare_sorts @{context} [@{term plus}];
+@{term plus};
+infix 9 <$>;
+let
+fun x <$> y = x + y;
+in
+3 <$> 4
+end;
+let
+fun x <$> y = x * y;
+in
+3 <$> 4
+end;
+infix 9 <APP>;
+@{type_name fun};
+let val a=0; val b=1 in writeln "x"; 4 end;
+fun f x = case x of NONE => 3 | SOME t => t;
+
+@{term case_prod};
+[] = [];
+hd;
+not true;
+NONE;
+get_first;
 \<close>
   
-term 0 (*
+term 0 (**)
 ML_file \<open>Transform.ML\<close>
 term 0 (**)
 ML \<open>
-(lift_pure_term [] @{term "plus::nat\<Rightarrow>nat\<Rightarrow>nat"});
+su_simp0;
+
+\<close>
+  
+ML \<open>
+
 \<close>
 end
 end
