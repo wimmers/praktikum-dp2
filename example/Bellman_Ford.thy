@@ -51,7 +51,7 @@ context
   includes lifting_syntax
 begin
 
-definition K :: "'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" where
+abbreviation K :: "'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" where
   "K x \<equiv> eq_onp (op = x)"
 term 0 (**)
 
@@ -80,47 +80,46 @@ lemma bf_inductS':
            (rel_prod (K k) (K j) ===> bf.crel_vs op =) bf bf\<^sub>T
            \<rbrakk> \<Longrightarrow> bf.crel_vs op = (bf (Suc k, j)) (bf\<^sub>T (Suc k, j))
    \<rbrakk> \<Longrightarrow> bf.crel_vs op = (bf (x::nat\<times>nat)) (bf\<^sub>T x)"
-  unfolding K_def eq_onp_def rel_prod.simps using bf_inductS by blast
+  unfolding eq_onp_def rel_prod.simps using bf_inductS by blast
 
 thm eq_onp_to_eq
   
 lemma "bf.consistentDP bf\<^sub>T"
   apply ( rule dp_consistency.consistentDP_intro,
-    induct_tac rule: bf_inductS',
+    induct_tac rule: bf_inductS,
     unfold bf\<^sub>T.simps;
     rule dp_consistency.crel_vs_checkmem,
     unfold bf.simps)
   subgoal
-    by transfer_prover
-  subgoal premises prems[transfer_rule]
-    thm prems
-      supply [transfer_rule] = bf.map_transfer_inset 
-    apply transfer_prover_start
-              apply transfer_step
-             apply transfer_step
-            apply transfer_step
-                        apply transfer_step
-    apply transfer_step
-    apply transfer_step
-    apply transfer_step
-                       apply transfer_step
-    apply transfer_step
-                     apply transfer_step
-                    apply transfer_step
-      back
-                   apply transfer_step
-                  supply [transfer_rule] = eq_onp_to_eq
-      
-
-      
-          using bf.map_transfer_inset
-      
-          
-      thm fold_cong
-  term 0 (*
-  by (dp_match induct: bf_inductS' simp: bf.simps simp\<^sub>T: bf\<^sub>T.simps)
-term 0 (**)
-
-thm bf.induct bf\<^sub>T.induct
+    apply (rule bf.return_transfer[THEN rel_funD])
+    apply (rule refl)
+    done
+  subgoal premises prems
+    apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD]) back
+     apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
+      apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD, where f=fold])
+       apply (rule bf.fold_transfer)
+      apply (rule bf.min_transfer)
+     apply (rule bf.map_transfer_inset_unfolded'[where ?R0.0="op ="])
+      apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD]) back
+       apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
+        apply (rule bf.plus_transfer)
+       apply (rule bf.crel_vs_return)
+       apply (rule cong) back back
+        apply (rule cong)
+         apply (rule refl)
+        apply (assumption)
+       apply (rule refl)
+    subgoal premises prems'
+      unfolding prems'(1)
+      apply (rule prems(1))
+      apply (fact prems'(2)[unfolded prems'(1)])
+      done
+     apply (rule bf.crel_vs_return)
+     apply (unfold list.rel_eq)
+     apply (rule refl)
+    apply (fact prems(2))
+    done
+  done
 
 end
