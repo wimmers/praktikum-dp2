@@ -13,8 +13,11 @@ method dp_match uses induct simp simp\<^sub>T =
       | (match conclusion in _ \<Rightarrow> transfer_prover)))
 *)
   thm dp_consistency.crel_vs_return
-method dp_step uses IH =
+xmethod dp_step uses IH =
   (match conclusion in
     "dp_consistency.crel_vs dp R x \<langle>y\<rangle>" for dp R x y \<Rightarrow> \<open>rule dp_consistency.crel_vs_return[of R x y dp]\<close>
+  | "dp_consistency.crel_vs dp R (case x"
   )
+
+method dp_naive = (solves \<open>simp\<close>)
 end

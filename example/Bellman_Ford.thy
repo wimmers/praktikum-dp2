@@ -85,12 +85,13 @@ lemma bf_inductS':
 thm eq_onp_to_eq
   
 lemma "bf.consistentDP bf\<^sub>T"
-  apply (tactic \<open>FIRSTGOAL (resolve_tac @{context} @{thms dp_consistency.consistentDP_intro})\<close>)
-  apply (tactic \<open>FIRSTGOAL (resolve_tac @{context} @{thms bf.induct})\<close>)
-    using bf\<^sub>T.simps
-     apply (tactic \<open>unfold_tac @{context} @{thms bf\<^sub>T.simps}\<close>)
-      
-      ML_prf \<open>simp_tac; @{term bf.crel_vs}\<close>
+  apply ( rule dp_consistency.consistentDP_intro,
+    rule bf.induct,
+    unfold bf\<^sub>T.simps;
+    rule dp_consistency.crel_vs_checkmem,
+    unfold bf.simps)
+   apply (dp_step) apply (solves \<open>simp\<close>)
+    
     oops
 lemma 
   assumes A
