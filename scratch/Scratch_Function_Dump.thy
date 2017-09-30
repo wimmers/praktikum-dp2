@@ -643,7 +643,11 @@ gunction wis :: "nat \<Rightarrow> nat" where
   by pat_completeness auto
 uermination
   by (relation "(\<lambda>p. size p) <*mlex*> {}") (auto intro: wf_mlex mlex_less simp: p_lt)
-
+thm wis.simps
+ML \<open>
+@{term local.wis};
+@{term Scratch_Function_Dump.wis};
+\<close>
 end
   
 ML \<open>
