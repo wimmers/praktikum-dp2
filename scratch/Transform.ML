@@ -87,7 +87,7 @@ fun lift_fun term_opt ctxt =
         val (lhs, rhs0) = Thm.full_prop_of simp_thm |> HOLogic.dest_Trueprop |> HOLogic.dest_eq;
         val rhs = subst_var_free rhs0;
     
-        val (func_head, func_context, param0) = extract_lhs lhs;
+        val (func_head, _, param0) = extract_lhs lhs;
         val param = subst_var_free param0;
     
         fun lift_term bound_types tm =

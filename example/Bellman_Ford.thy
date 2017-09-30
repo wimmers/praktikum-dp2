@@ -85,6 +85,19 @@ lemma bf_inductS':
 thm eq_onp_to_eq
   
 lemma "bf.consistentDP bf\<^sub>T"
+  apply (tactic \<open>FIRSTGOAL (resolve_tac @{context} @{thms dp_consistency.consistentDP_intro})\<close>)
+  apply (tactic \<open>FIRSTGOAL (resolve_tac @{context} @{thms bf.induct})\<close>)
+    using bf\<^sub>T.simps
+     apply (tactic \<open>unfold_tac @{context} @{thms bf\<^sub>T.simps}\<close>)
+      
+      ML_prf \<open>simp_tac; @{term bf.crel_vs}\<close>
+    oops
+lemma 
+  assumes A
+  shows B
+    thm  bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD]
+    apply (use \<open>A\<close>)
+  term 0 (*
   apply ( rule dp_consistency.consistentDP_intro,
     induct_tac rule: bf_inductS,
     unfold bf\<^sub>T.simps;

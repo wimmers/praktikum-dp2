@@ -52,7 +52,7 @@ lift_fun (SOME @{term su}) @{context}
 find_theorems su\<^sub>T
 definition "a\<equiv>w"
 ML \<open>
-@{thms su.simps};
+@{thms su\<^sub>T.simps};
 Function.get_info @{context} @{term su};
 
 \<close>

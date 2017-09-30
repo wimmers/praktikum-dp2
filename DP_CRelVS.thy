@@ -120,7 +120,11 @@ lemma bind_transfer[transfer_rule]:
 lemma fun_app_lifted_transfer[transfer_rule]:
   "(crel_vs (R0 ===>\<^sub>T R1) ===> crel_vs R0 ===> crel_vs R1) (\<lambda> f x. f x) (op .)"
   unfolding fun_app_lifted_def by transfer_prover
-
+    
+lemma crel_vs_fun_app:
+  "\<lbrakk>crel_vs (R0 ===>\<^sub>T R1) f f\<^sub>T; crel_vs R0 x x\<^sub>T\<rbrakk> \<Longrightarrow> crel_vs R1 (f x) (f\<^sub>T . x\<^sub>T)"
+  using fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD] .
+    
 term 0 (**)
 
 lemma unlift_'_transfer[transfer_rule]:
