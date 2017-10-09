@@ -77,7 +77,7 @@ fun lift_fun term_opt ctxt =
           Type (@{type_name fun}, [dom, _]) =>
             (case dom of
               Type (@{type_name fun}, _) => raise TYPE("High order domain type", [dom], [tm])
-            | _ => Term.abs (Name.uu, dom) (lift_pure_term (dom::bound_types) (incr_boundvars 1 tm $ Bound 0)))
+            | _ => Term.absdummy dom (lift_pure_term (dom::bound_types) (incr_boundvars 1 tm $ Bound 0)))
          | _ => tm);
 
     val funcT_head = Free (funcT_name, dom_type --> lift_type ran_type);
