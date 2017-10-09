@@ -152,13 +152,13 @@ lemma eq_onp_eq: "(eq_onp P0 ===> eq_onp P1 ===> op =) f f"
 ML  \<open>
 fun tac0 ctx = REPEAT_ALL_NEW (resolve_tac ctx (Transfer.get_transfer_raw ctx));
 fun tac1 ctx = DETERM o Transfer.eq_tac ctx;
-fun tac ctx = tac0 ctx THEN_ALL_NEW tac1 ctx;
+fun transfer_step_tac ctx = tac0 ctx THEN_ALL_NEW tac1 ctx;
+
 fun eq_tac' ctxt =
   TRY o REPEAT_ALL_NEW (resolve_tac ctxt @{thms relator_eq_raw relator_mono})
   THEN_ALL_NEW resolve_tac ctxt @{thms is_equality_eq};
 fun tac1' ctx = DETERM o eq_tac' ctx;
-fun tac' ctx = tac0 ctx THEN_ALL_NEW tac1' ctx;
-Seq.DETERM;
+fun transfer_step_tac' ctx = tac0 ctx THEN_ALL_NEW tac1' ctx;
 \<close>
 
 lemma K_self: "K x x x"  
@@ -198,7 +198,7 @@ lemma "bf.consistentDP bf\<^sub>T"
                        apply transfer_step back back back back back back back back back back back back
                       apply transfer_step back
                      apply transfer_step
-                    apply (tactic \<open>HEADGOAL (tac' @{context})\<close>) 
+                    apply (tactic \<open>HEADGOAL (transfer_step_tac' @{context})\<close>) 
                    apply transfer_step
                   apply transfer_step back
                  apply transfer_step
