@@ -74,9 +74,7 @@ lemma bf_inductS:
 
 lemma bf_inductS':
   "\<lbrakk>\<And>j. bf.crel_vs op = (bf (0, j)) (bf\<^sub>T (0, j));
-    \<And>k j. \<lbrakk>K k k k;
-           K j j j;
-           (rel_prod (K k) (eq_onp (\<lambda>x. x\<in>set [0..<n])) ===> bf.crel_vs op =) bf bf\<^sub>T;
+    \<And>k j. \<lbrakk>(rel_prod (K k) (eq_onp (\<lambda>x. x\<in>set [0..<n])) ===> bf.crel_vs op =) bf bf\<^sub>T;
            (rel_prod (K k) (K j) ===> bf.crel_vs op =) bf bf\<^sub>T
            \<rbrakk> \<Longrightarrow> bf.crel_vs op = (bf (Suc k, j)) (bf\<^sub>T (Suc k, j))
    \<rbrakk> \<Longrightarrow> bf.crel_vs op = (bf (x::nat\<times>nat)) (bf\<^sub>T x)"
@@ -171,17 +169,8 @@ lemma K_fun:
   assumes "R (f x) (g x)"
   shows "(K x ===> R) f g"
   using assms unfolding eq_onp_def by auto
-    term  0 (*
-    
-lemma upt_K_transfer: "bf.crel_vs (K l ===>\<^sub>T K r ===>\<^sub>T K (upt l r)) upt upt\<^sub>T"
-proof -
-  have [transfer_rule]: "(K l ===> K r ===> K (upt l r)) upt upt" for l r
-    unfolding rel_fun_def eq_onp_def by auto
-  show ?thesis
-    unfolding upt\<^sub>T_def lift_33_def by transfer_prover
-qed
-  
-term 0 (*
+
+term 0 (**)
 lemma "bf.consistentDP bf\<^sub>T"
   apply (rule bf.consistentDP_intro)
   subgoal for param
@@ -192,32 +181,44 @@ lemma "bf.consistentDP bf\<^sub>T"
       apply (unfold bf.simps)
       apply transfer_prover
       done
-    subgoal premises prems[transfer_rule]
-      
+    subgoal premises prems
+      apply (rule bf.crel_vs_checkmem)
+      apply (unfold bf.simps)
+      supply [transfer_rule] = prems K_self K_fun
       apply transfer_prover_start
-                     apply (tactic \<open>HEADGOAL (tac0 @{context})\<close>)
-                    apply (tactic \<open>HEADGOAL (tac0 @{context})\<close>)
-                   apply (tactic \<open>HEADGOAL (tac0 @{context})\<close>) back
+                          apply transfer_step
+                          apply transfer_step
+                          apply transfer_step back back back back back back back back
+                          apply transfer_step
+                          apply transfer_step
+                          apply transfer_step
                           apply (tactic \<open>HEADGOAL (tac0 @{context})\<close>)
-                          apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
-                          apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
-                          apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
-                          apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
-                          apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
-                          apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
-                          apply (tactic \<open>HEADGOAL (tac @{context})\<close>) back
-                          apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
-                         apply (tactic \<open>HEADGOAL (tac' @{context})\<close>)
-                        apply (tactic \<open>HEADGOAL (tac0 @{context})\<close>)
-                       apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
-                      apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
-                     apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
-                    apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
+                          apply (tactic \<open>HEADGOAL (tac1 @{context})\<close>)
+                          apply (tactic \<open>HEADGOAL (tac1 @{context})\<close>)
+                          apply (tactic \<open>HEADGOAL (tac1 @{context})\<close>)
+                          apply transfer_step back back back back
+                          apply transfer_step
+                          apply transfer_step back back back back back back back back back back back back
+                          apply transfer_step back
+                     apply transfer_step
+                         apply (rule transfer_raw(30))
+                         apply (tactic \<open>HEADGOAL (tac1' @{context})\<close>)
+                        apply transfer_step
+                       apply transfer_step back
+                      apply transfer_step
+                     apply transfer_step
+                    apply transfer_step
                    supply [transfer_rule] = bf.map_transfer_inset0
-                   apply (tactic \<open>HEADGOAL (tac0 @{context})\<close>)
-        apply (rule is_equality_eq)
-        apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
-      oops
-        lemma "is_equality"
-        
-end
+                   apply transfer_step
+                  apply transfer_step
+                 apply transfer_step
+                apply transfer_step back
+               supply [transfer_rule] = bf.fold_transfer
+               apply transfer_step
+              apply transfer_step
+             apply transfer_step
+       apply transfer_step
+      apply transfer_prover_end
+      done
+    done
+  done
