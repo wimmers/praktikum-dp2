@@ -150,17 +150,17 @@ lemma "bf.consistentDP bf\<^sub>T"
 lemma eq_onp_eq: "(eq_onp P0 ===> eq_onp P1 ===> op =) f f"
   unfolding eq_onp_def rel_fun_def by auto
 ML  \<open>
-fun eq_rules_tac ctxt =
+fun eq_tac ctxt =
   TRY o REPEAT_ALL_NEW (resolve_tac ctxt @{thms relator_eq_raw})
   THEN_ALL_NEW resolve_tac ctxt @{thms is_equality_eq}
-fun tac0 ctx = REPEAT_ALL_NEW (resolve_tac ctx (Transfer.get_transfer_raw ctx));
-fun tac1 ctx = DETERM o Transfer.eq_tac ctx;
+fun tac0 ctx = REPEAT_ALL_NEW (resolve_tac ctx @{thms transfer_raw});
+fun tac1 ctx = DETERM o eq_tac ctx;
 fun transfer_step_tac ctx = tac0 ctx THEN_ALL_NEW tac1 ctx;
 
-fun eq_rules_tac' ctxt =
+fun eq_tac' ctxt =
   TRY o REPEAT_ALL_NEW (resolve_tac ctxt @{thms relator_eq_raw relator_mono})
   THEN_ALL_NEW resolve_tac ctxt @{thms is_equality_eq};
-fun tac1' ctx = DETERM o eq_rules_tac' ctx;
+fun tac1' ctx = DETERM o eq_tac' ctx;
 fun transfer_step_tac' ctx = tac0 ctx THEN_ALL_NEW tac1' ctx;
 \<close>
 
