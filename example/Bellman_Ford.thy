@@ -192,31 +192,27 @@ lemma "bf.consistentDP bf\<^sub>T"
                           apply transfer_step
                           apply transfer_step
                           apply transfer_step
-                          apply (tactic \<open>HEADGOAL (tac0 @{context})\<close>)
-                          apply (tactic \<open>HEADGOAL (tac1 @{context})\<close>)
-                          apply (tactic \<open>HEADGOAL (tac1 @{context})\<close>)
-                          apply (tactic \<open>HEADGOAL (tac1 @{context})\<close>)
-                          apply transfer_step back back back back
                           apply transfer_step
-                          apply transfer_step back back back back back back back back back back back back
-                          apply transfer_step back
-                     apply transfer_step
-                         apply (rule transfer_raw(30))
-                         apply (tactic \<open>HEADGOAL (tac1' @{context})\<close>)
+                         apply transfer_step back back back back
                         apply transfer_step
-                       apply transfer_step back
-                      apply transfer_step
+                       apply transfer_step back back back back back back back back back back back back
+                      apply transfer_step back
                      apply transfer_step
-                    apply transfer_step
-                   supply [transfer_rule] = bf.map_transfer_inset0
+                    apply (tactic \<open>HEADGOAL (tac' @{context})\<close>) 
                    apply transfer_step
-                  apply transfer_step
+                  apply transfer_step back
                  apply transfer_step
-                apply transfer_step back
-               supply [transfer_rule] = bf.fold_transfer
+                apply transfer_step
                apply transfer_step
+              supply [transfer_rule] = bf.map_transfer_inset0
               apply transfer_step
              apply transfer_step
+            apply transfer_step
+           apply transfer_step back
+          supply [transfer_rule] = bf.fold_transfer
+          apply transfer_step
+         apply transfer_step
+        apply transfer_step
        apply transfer_step
       apply transfer_prover_end
       done
