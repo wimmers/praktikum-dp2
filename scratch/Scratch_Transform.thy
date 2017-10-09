@@ -12,11 +12,8 @@ fun su :: "nat\<times>nat \<Rightarrow> nat" where
     then su (i, W)
     else max (su (i, W)) (w i + su (i, W - w i)))"
 
-ML \<open>
+ML_val \<open>
 val su_info = Function.get_info @{context} @{term su};
-\<close>
-  
-ML \<open>
 val su_simps = su_info |> #simps |> the;
 val [su_simp0, su_simp1] = su_simps;
 HOLogic.mk_eq;
@@ -51,11 +48,42 @@ lift_fun (SOME @{term su}) @{context}
   
 find_theorems su\<^sub>T
 definition "a\<equiv>w"
-ML \<open>
+ML_val \<open>
 @{thms su\<^sub>T.simps};
 Function.get_info @{context} @{term su};
 
 \<close>
+  thm refl[of x]
+ML_val \<open>
+op OF;
+Thm.instantiate;
+Thm.rule_attribute;
+@{term xx} |> Thm.cterm_of @{context};
+Sign.certify_term;
+(*Thm.cterm_of @{context} (Bound 1)*)
+@{thms transfer_forall_eq transfer_implies_eq};
+rewrite_goal_tac;
+Seq.DETERM;
+\<close>
+ML \<open>
+val _ = Transfer.get_relator_eq_raw @{context};
+@{thms is_equality_eq};
+TRY;
+fun nth' l i = nth i l;
+Transfer.get_transfer_raw @{context} |> drop 240 |> take 10;
+Item_Net.update;
+Transfer.transfer_raw_add;
+val _ = Transfer.get_relator_eq @{context};
+\<close>
+ML \<open>
+val transfer_raw = Thm.intro_rules;
+val known_frees = [];
+
+val relator_eq_raw = Thm.full_rules;
+val relator_domain = Thm.full_rules;
+Thm.theory_of_thm @{lemma "P \<Longrightarrow> Q \<Longrightarrow> R \<Longrightarrow> P" by auto}
+\<close>
+  declare TrueI[transfer_rule]
   term 0 (*
   
 ML \<open>
