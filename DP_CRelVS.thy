@@ -257,7 +257,7 @@ qed
   
 definition "and_leftp R P x y \<equiv> R x y \<and> P x"
 
-lemma eq_onp_and_leftp_eq: "eq_onp P x y \<Longrightarrow> and_leftp (op =) P x y"
+lemma eq_onp_and_leftp_eq: "and_leftp (op =) P x y \<longleftrightarrow> eq_onp P x y"
   unfolding and_leftp_def eq_onp_def by auto
 
 lemma and_leftp_elim: "and_leftp R P x y \<Longrightarrow> (R x y \<Longrightarrow> P x \<Longrightarrow> thesis) \<Longrightarrow> thesis"
@@ -299,7 +299,7 @@ proof -
   show ?thesis
     unfolding map\<^sub>T_def by transfer_prover
 qed
-  
+
 lemma map_transfer_inset_unfolded:
   fixes R0 R1 f f\<^sub>T' xs xs\<^sub>T
   assumes "(and_leftp R0 (\<lambda>x. x\<in>set xs) ===>\<^sub>T R1) f f\<^sub>T'" "crel_vs (list_all2 R0) xs xs\<^sub>T"
@@ -328,6 +328,19 @@ lemma map_transfer_inset_unfolded':
   apply (fact assms(2))
   done
 
+lemma crel_vs_map_simple:
+  fixes R f f\<^sub>T' xs xs\<^sub>T
+  assumes "\<And>x. x \<in> set xs \<Longrightarrow> crel_vs op = (f x) (f\<^sub>T' x)" "crel_vs op = xs xs\<^sub>T"
+  shows "crel_vs op = (map f xs) (map\<^sub>T . \<langle>f\<^sub>T'\<rangle> . xs\<^sub>T)"
+  apply (rule map_transfer_inset_unfolded'[where ?R0.0="op =" and ?R1.0="op =", unfolded list.rel_eq])
+   apply clarify
+   apply (fact assms(1))
+  apply (fact assms(2))
+  done
+
+lemma map_transfer_inset0:
+  "crel_vs ((eq_onp (\<lambda>x. x\<in>set xs) ===>\<^sub>T R) ===>\<^sub>T eq_onp (op = xs) ===>\<^sub>T (list_all2 R)) map map\<^sub>T"
+  using map_transfer_inset[of "op =", unfolded list.rel_eq eq_onp_and_leftp_eq] .
 term 0 (**)
 
 lemma fold_transfer_inset:

@@ -1,5 +1,5 @@
 theory Bellman_Ford
-  imports "../DP_Lifting" "../DP_CRelVS" "../DP_Proof"
+  imports "../DP_Lifting" "../DP_CRelVS" "../DP_Proof" "../scratch/Scratch_relator_mono"
 begin
   
 consts n :: nat
@@ -84,56 +84,140 @@ lemma bf_inductS':
 
 thm eq_onp_to_eq
   
+notation bf.rel_fun_lifted (infixr "===>\<^sub>T" 55)
+  
 lemma "bf.consistentDP bf\<^sub>T"
-  apply ( rule dp_consistency.consistentDP_intro,
-    rule bf.induct,
-    unfold bf\<^sub>T.simps;
-    rule dp_consistency.crel_vs_checkmem,
-    unfold bf.simps)
-   apply (dp_step) apply (solves \<open>simp\<close>)
-    
-    oops
-lemma 
-  assumes A
-  shows B
-    thm  bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD]
-    apply (use \<open>A\<close>)
-  term 0 (*
-  apply ( rule dp_consistency.consistentDP_intro,
-    induct_tac rule: bf_inductS,
-    unfold bf\<^sub>T.simps;
-    rule dp_consistency.crel_vs_checkmem,
-    unfold bf.simps)
-  subgoal
-    apply (rule bf.return_transfer[THEN rel_funD])
-    apply (rule refl)
-    done
-  subgoal premises prems
-    apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD]) back
-     apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
-      apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD, where f=fold])
-       apply (rule bf.fold_transfer)
-      apply (rule bf.min_transfer)
-     apply (rule bf.map_transfer_inset_unfolded'[where ?R0.0="op ="])
-      apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD]) back
-       apply (rule bf.fun_app_lifted_transfer[THEN rel_funD, THEN rel_funD])
-        apply (rule bf.plus_transfer)
-       apply (rule bf.crel_vs_return)
-       apply (rule cong) back back
-        apply (rule cong)
-         apply (rule refl)
-        apply (assumption)
-       apply (rule refl)
-    subgoal premises prems'
-      unfolding prems'(1)
-      apply (rule prems(1))
-      apply (fact prems'(2)[unfolded prems'(1)])
-      done
-     apply (rule bf.crel_vs_return)
-     apply (unfold list.rel_eq)
-     apply (rule refl)
-    apply (fact prems(2))
-    done
-  done
+  apply (rule dp_consistency.consistentDP_intro)
+    subgoal for param
+      apply (rule bf.induct)
+       apply (unfold bf\<^sub>T.simps)
+      subgoal for j
+        apply (rule dp_consistency.crel_vs_checkmem)
+        apply (unfold bf.simps)
+          
+        apply (rule bf.crel_vs_return[where R="op =" and x="W 0 j" and y="W 0 j"])
+        apply (rule refl[of "W 0 j"])
+        done
+      subgoal premises IH for k j
+        apply (rule dp_consistency.crel_vs_checkmem)
+        apply (unfold bf.simps)
+        apply (rule bf.crel_vs_fun_app[
+            where f="fold min (map (\<lambda>i. W i j + bf (k, i)) [0..<n])" and x="(bf (k, j))"
+              and f\<^sub>T="fold\<^sub>T . min\<^sub>T . (map\<^sub>T . \<langle>\<lambda>i. plus\<^sub>T . \<langle>W i j\<rangle> . (bf\<^sub>T (k, i))\<rangle> .\<langle>[0..<n]\<rangle>)"
+              and x\<^sub>T="(bf\<^sub>T (k, j))"
+              and ?R0.0="op ="
+              and ?R1.0="op ="
+              ])
+         apply (rule bf.crel_vs_fun_app[
+              where f="fold min" and x="map (\<lambda>i. W i j + bf (k, i)) [0..<n]"
+                and f\<^sub>T="fold\<^sub>T . min\<^sub>T"
+                and x\<^sub>T="map\<^sub>T . \<langle>\<lambda>i. plus\<^sub>T . \<langle>W i j\<rangle> . (bf\<^sub>T (k, i))\<rangle> . \<langle>[0..<n]\<rangle>"
+                and ?R0.0="list_all2 op ="
+                and ?R1.0="op = ===>\<^sub>T op ="
+                ])
+          apply (rule bf.crel_vs_fun_app[
+              where f=fold and x=min
+                and f\<^sub>T=fold\<^sub>T and x\<^sub>T=min\<^sub>T
+                and ?R0.0="op = ===>\<^sub>T op = ===>\<^sub>T op ="
+                and ?R1.0="list_all2 op = ===>\<^sub>T op = ===>\<^sub>T op ="
+                ])
+           apply (fact bf.fold_transfer)
+          apply (fact bf.min_transfer)
+         apply (rule bf.map_transfer_inset_unfolded'[
+              where f="\<lambda>i. W i j + bf (k, i)" and xs="[0..<n]"
+                and f\<^sub>T'="\<lambda>i. plus\<^sub>T . \<langle>W i j\<rangle> . (bf\<^sub>T (k, i))" and xs\<^sub>T="\<langle>[0..<n]\<rangle>"
+                and ?R0.0="op =" and ?R1.0="op ="
+                ])
+        subgoal premises prems for x x\<^sub>T'
+          apply (rule bf.crel_vs_fun_app[
+                where f="op + (W x j)" and x="bf (k, x)"
+                  and f\<^sub>T="plus\<^sub>T . \<langle>W x\<^sub>T' j\<rangle>" and x\<^sub>T="bf\<^sub>T (k, x\<^sub>T')"
+                  and ?R0.0="op =" and ?R1.0="op ="
+                  ])
+           apply (rule bf.crel_vs_fun_app[
+                where f="op +" and x="(W x j)"
+                  and f\<^sub>T="plus\<^sub>T" and x\<^sub>T="\<langle>W x\<^sub>T' j\<rangle>"
+                  and ?R0.0="op =" and ?R1.0="op = ===>\<^sub>T op ="
+                  ])
+            apply (fact bf.plus_transfer)
+           apply (rule bf.crel_vs_return[where x="W x j" and y="W x\<^sub>T' j" and R="op ="])
+           apply (rule cong[where f="W x" and g="W x\<^sub>T'" and x=j and y=j])
+            apply (rule cong[where f="W" and g="W" and x=x and y=x\<^sub>T'])
+             apply (fact refl)
+            apply (fact prems)
+           apply (fact refl)
+            using prems IH(2)[where x=x\<^sub>T']
+              
+            oops
+lemma eq_onp_eq: "(eq_onp P0 ===> eq_onp P1 ===> op =) f f"
+  unfolding eq_onp_def rel_fun_def by auto
+ML  \<open>
+fun tac0 ctx = REPEAT_ALL_NEW (resolve_tac ctx (Transfer.get_transfer_raw ctx));
+fun tac1 ctx = DETERM o Transfer.eq_tac ctx;
+fun tac ctx = tac0 ctx THEN_ALL_NEW tac1 ctx;
+fun eq_tac' ctxt =
+  TRY o REPEAT_ALL_NEW (resolve_tac ctxt @{thms relator_eq_raw relator_mono})
+  THEN_ALL_NEW resolve_tac ctxt @{thms is_equality_eq};
+fun tac1' ctx = DETERM o eq_tac' ctx;
+fun tac' ctx = tac0 ctx THEN_ALL_NEW tac1' ctx;
+Seq.DETERM;
+\<close>
 
+lemma K_self: "K x x x"  
+  unfolding eq_onp_def by auto
+
+lemma K_fun:
+  fixes R f g x
+  assumes "R (f x) (g x)"
+  shows "(K x ===> R) f g"
+  using assms unfolding eq_onp_def by auto
+    term  0 (*
+    
+lemma upt_K_transfer: "bf.crel_vs (K l ===>\<^sub>T K r ===>\<^sub>T K (upt l r)) upt upt\<^sub>T"
+proof -
+  have [transfer_rule]: "(K l ===> K r ===> K (upt l r)) upt upt" for l r
+    unfolding rel_fun_def eq_onp_def by auto
+  show ?thesis
+    unfolding upt\<^sub>T_def lift_33_def by transfer_prover
+qed
+  
+term 0 (*
+lemma "bf.consistentDP bf\<^sub>T"
+  apply (rule bf.consistentDP_intro)
+  subgoal for param
+    apply (rule bf_inductS')
+     apply (unfold bf\<^sub>T.simps)
+    subgoal
+      apply (rule bf.crel_vs_checkmem)
+      apply (unfold bf.simps)
+      apply transfer_prover
+      done
+    subgoal premises prems[transfer_rule]
+      
+      apply transfer_prover_start
+                     apply (tactic \<open>HEADGOAL (tac0 @{context})\<close>)
+                    apply (tactic \<open>HEADGOAL (tac0 @{context})\<close>)
+                   apply (tactic \<open>HEADGOAL (tac0 @{context})\<close>) back
+                          apply (tactic \<open>HEADGOAL (tac0 @{context})\<close>)
+                          apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
+                          apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
+                          apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
+                          apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
+                          apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
+                          apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
+                          apply (tactic \<open>HEADGOAL (tac @{context})\<close>) back
+                          apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
+                         apply (tactic \<open>HEADGOAL (tac' @{context})\<close>)
+                        apply (tactic \<open>HEADGOAL (tac0 @{context})\<close>)
+                       apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
+                      apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
+                     apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
+                    apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
+                   supply [transfer_rule] = bf.map_transfer_inset0
+                   apply (tactic \<open>HEADGOAL (tac0 @{context})\<close>)
+        apply (rule is_equality_eq)
+        apply (tactic \<open>HEADGOAL (tac @{context})\<close>)
+      oops
+        lemma "is_equality"
+        
 end
