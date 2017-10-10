@@ -23,7 +23,19 @@ fun fib :: "nat \<Rightarrow> int option" where
         of1)
       (Pair (fib (Suc n)) (fib n))"
 thm fib.simps
-term 0 (**)
+
+ML_val \<open>
+val f1 = Function.get_info @{context} @{const fib};
+val def1 = Inductive.the_inductive @{context} (#R f1) |> snd |> #eqs;
+val thm = f1 |> #totality |> the;
+Local_Defs.unfold @{context} def1 thm;
+Function.add_function;
+op |>;
+\<close>
+ML_val \<open>
+@{term fib_rel}
+\<close>
+term 0 (*
 
 fun fib\<^sub>T :: "nat \<Rightarrow>\<^sub>T int option" where
   "fib\<^sub>T$ 0 =CHECKMEM= \<langle>Some 0\<rangle>"
@@ -37,10 +49,12 @@ fun fib\<^sub>T :: "nat \<Rightarrow>\<^sub>T int option" where
           . \<langle>of0\<rangle>)
         . \<langle>of1\<rangle>)
     . (Pair\<^sub>T . (fib\<^sub>T (Suc n)) . (fib\<^sub>T n))"
-term 0 (**)
+*)
 
-interpretation fib: dp_consistency fib .
+ML_file \<open>../scratch/Transform.ML\<close>
 
-lemma "fib.consistentDP fib\<^sub>T"
-  by (dp_match induct: fib\<^sub>T.induct simp: fib.simps simp\<^sub>T: fib\<^sub>T.simps)
-end
+local_setup \<open>
+lift_fun NONE;
+\<close>
+
+print_theorems

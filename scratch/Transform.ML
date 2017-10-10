@@ -24,7 +24,7 @@ fun extract_lhs (lhs: term) =
     (func_head, context, param)
   end;
 
-fun lift_fun term_opt ctxt =
+fun lift_fun term_opt = fn ctxt =>
   let
     val func_info =
       case term_opt of
@@ -38,6 +38,12 @@ fun lift_fun term_opt ctxt =
     val func_type = local_func_head |> type_of;
     val (dom_type, ran_type) = dest_funT func_type;
     val mem_type = dom_type --> Type (@{type_name "Option.option"}, [ran_type]);
+
+    val _ = Pretty.writeln (Pretty.block [
+      Pretty.str "Transform", Pretty.brk 1,
+      Pretty.quote (Syntax.pretty_term ctxt local_func_head), Pretty.brk 1,
+      Pretty.str "into", Pretty.brk 1,
+      Pretty.str funcT_name])
     
     val _ =
       case ran_type of
@@ -128,8 +134,23 @@ fun lift_fun term_opt ctxt =
                     else NONE
               | case_prod_term =>
                   if Term.aconv_untyped (case_prod_term, @{term case_prod})
-                    then raise TERM("outstanding case_prod", [])
+                    then raise TERM("outstanding case_prod", [case_prod_term])
                     else NONE;
+
+            fun check_case_option tm =
+              case tm of
+                case_option_term $ if_none $ if_some =>
+                  if Term.aconv_untyped (case_option_term, @{term case_option})
+                    then SOME (
+                      Const (@{const_name DP_Lifting.case_option\<^sub>T}, lift_type (type_of case_option_term))
+                      <$> lift_term bound_types if_none
+                      <$> lift_term bound_types if_some
+                    )
+                    else NONE
+              | case_option_term =>
+                if Term.aconv_untyped (case_option_term, @{term case_option})
+                  then raise TERM("outstanding case_option", [case_option_term])
+                  else NONE;
     
             fun check_func tm =
               case tm of
@@ -154,6 +175,7 @@ fun lift_fun term_opt ctxt =
               check_pure,
               check_If,
               check_case_prod,
+              check_case_option,
               check_func,
               check_fallback
             ];
@@ -166,6 +188,27 @@ fun lift_fun term_opt ctxt =
 
     val func_fixes = [(funcT_binding, SOME (type_of funcT_head), NoSyn)];
     val func_specs = map (fn simp => (((Binding.empty, []), transform_simp simp), [], [])) (#simps func_info |> the);
+
+    fun transform_totality ctxt info0 info1 =
+      let
+        val def0 = Inductive.the_inductive ctxt (#R info0) |> snd |> #eqs;
+        val def1 = Inductive.the_inductive ctxt (#R info1) |> snd |> #eqs;
+        val totality0 = info0 |> #totality |> the;
+        val totality1 = totality0
+          |> Local_Defs.unfold ctxt def0
+          |> Local_Defs.fold ctxt def1
+      in
+        HEADGOAL (resolve_tac ctxt [totality1])
+      end;
+
+    fun pat_completeness_auto ctxt =
+      Pat_Completeness.pat_completeness_tac ctxt 1
+      THEN auto_tac ctxt
   in
-    Function_Fun.add_fun func_fixes func_specs Function_Common.default_config
+    let
+      val (info1, ctxt1) = Function.add_function func_fixes func_specs Function_Common.default_config pat_completeness_auto ctxt;
+      val (_, ctxt2) = Function.prove_termination NONE (transform_totality ctxt1 func_info info1) ctxt1
+    in
+      ctxt2
+    end
   end;

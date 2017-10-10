@@ -15,14 +15,16 @@ method dp_match uses induct simp simp\<^sub>T =
 thm dp_consistency.crel_vs_return
 thm dp_consistency.case_prod_transfer
 thm dp_consistency.crel_vs_fun_app
-term 0
+term 0 
 method dp_step uses IH =
   (match conclusion in
     "dp_consistency.crel_vs dp R x \<langle>y\<rangle>" for dp R x y
     \<Rightarrow> \<open>rule dp_consistency.crel_vs_return[of R x y dp]\<close>
   \<bar> "dp_consistency.crel_vs dp R (f x) (f\<^sub>T . x\<^sub>T)" for dp R f x f\<^sub>T x\<^sub>T
-    \<Rightarrow> \<open>rule dp_consistency.crel_vs_fun_app\<close>
-          
+    \<Rightarrow> \<open>match (x) in
+        "f x" \<Rightarrow> fail
+      \<bar> _ \<Rightarrow> \<open>rule dp_consistency.crel_vs_fun_app[where f=f and x=x]\<close>\<close>
+  \<bar> _ \<Rightarrow> \<open>fact dp_consistency.case_prod_transfer\<close>
   )
 
 method dp_naive = (solves \<open>simp\<close>)
