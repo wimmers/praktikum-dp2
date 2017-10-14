@@ -32,8 +32,8 @@ lemma is_equality_ge_equality:
   unfolding is_equality_def ge_equality_def by auto
 
 lemma le_equality_eq_onp:
-  fixes R
-  shows "le_equality (eq_onp R)"
+  fixes P
+  shows "le_equality (eq_onp P)"
   unfolding le_equality_def by (fact eq_onp_le_eq)
     
 lemma

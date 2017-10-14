@@ -206,7 +206,7 @@ fun lift_fun term_opt = fn ctxt =>
       THEN auto_tac ctxt
   in
     let
-      val (info1, ctxt1) = Function.add_function func_fixes func_specs Function_Common.default_config pat_completeness_auto ctxt;
+      val (info1, ctxt1) = Function.add_function func_fixes func_specs Function_Fun.fun_config pat_completeness_auto ctxt;
       val (_, ctxt2) = Function.prove_termination NONE (transform_totality ctxt1 func_info info1) ctxt1
     in
       ctxt2
