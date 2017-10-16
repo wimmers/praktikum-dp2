@@ -231,7 +231,7 @@ lemma Pair_transfer[transfer_rule]:
 term 0 (**)
 
   (* Combinator *)
-lemma map_transfer:
+lemma map_transfer[transfer_rule]:
   "crel_vs ((R0 ===>\<^sub>T R1) ===>\<^sub>T list_all2 R0 ===>\<^sub>T list_all2 R1) map map\<^sub>T"
 proof -
   have [transfer_rule]: "((R0 ===>\<^sub>T R1) ===> (list_all2 R0 ===>\<^sub>T list_all2 R1)) map map\<^sub>T'"
@@ -243,7 +243,7 @@ proof -
     unfolding map\<^sub>T_def by transfer_prover
 qed
   
-lemma fold_transfer:
+lemma fold_transfer[transfer_rule]:
   "crel_vs ((R0 ===>\<^sub>T R1 ===>\<^sub>T R1) ===>\<^sub>T list_all2 R0 ===>\<^sub>T R1 ===>\<^sub>T R1) fold fold\<^sub>T"
 proof -
   have [transfer_rule]: "((R0 ===>\<^sub>T R1 ===>\<^sub>T R1) ===> list_all2 R0 ===>\<^sub>T R1 ===>\<^sub>T R1) fold fold\<^sub>T'"
