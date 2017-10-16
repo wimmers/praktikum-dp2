@@ -51,11 +51,7 @@ lemma bf_induct:
            \<rbrakk> \<Longrightarrow> P (Suc k, j)
    \<rbrakk> \<Longrightarrow> P (x::nat\<times>nat)"
   by (fact bf\<^sub>T.induct)
-term 0 (**)
-term "pred_prod (op = (0::nat)) (op = (j::nat))"
-term "top::bool\<Rightarrow>bool"
-term map_fun
-term pred_fun
+
 lemma bf_induct':
   "\<lbrakk>\<And>j. pred_fun (pred_prod (op = 0) (op = j)) id P;
     \<And>k j. \<lbrakk>pred_fun (pred_prod (op = k) top) id P;
@@ -117,33 +113,6 @@ lemma bf_inductS':
            (rel_prod (K k) (K j) ===> bf.crel_vs op =) bf bf\<^sub>T
            \<rbrakk> \<Longrightarrow> bf.crel_vs op = (bf (Suc k, j)) (bf\<^sub>T (Suc k, j))
    \<rbrakk> \<Longrightarrow> (\<lambda>param. bf.crel_vs op = (bf param) (bf\<^sub>T param)) (param::nat\<times>nat)"
-  apply (tactic \<open>
-    HEADGOAL (Subgoal.FOCUS (fn {context=ctxt1, prems=IH, ...} => HEADGOAL (
-      resolve_tac ctxt1 @{thms bf\<^sub>T.induct}
-      THEN_ALL_NEW (fn i => Subgoal.FOCUS (fn {context=ctxt2, prems, ...} => HEADGOAL (
-        resolve_tac ctxt2 [nth IH (i-1)]
-        THEN_ALL_NEW (
-          ((resolve_tac ctxt2 @{thms K_self}) THEN_ALL_NEW (K no_tac))
-          ORELSE'
-          ((
-            (K all_tac)
-
-            THEN' resolve_tac ctxt2 @{thms rel_funI}
-            
-            THEN' eresolve_tac ctxt2 @{thms rel_prod.induct}
-
-            THEN' (K (unfold_tac ctxt2 @{thms K_def eq_onp_def}))
-THEN' (K debug_tac)
-            THEN' (clarify_tac ctxt2)
-
-            THEN' (solve_tac ctxt2 prems)
-
-          ) THEN_ALL_NEW (K no_tac))
-ORELSE' (K all_tac)
-        )
-      )) ctxt1 i)
-    )) @{context})
-  \<close>)
 term 0 *)
   ML_val \<open>Goal.init; print_tac;
 op oo;
@@ -231,17 +200,52 @@ val tactac =       resolve_tac @{context} @{thms K_self}
         THEN' (SELECT_GOAL (unfold_tac @{context} @{thms K_def eq_onp_def}))
         THEN' clarsimp_tac @{context})
 ;
+Proof.apply;
+Method.evaluate;
+Proof_Context.note_thmss;
+Transfer.transfer_raw_add;
+fold;
+
 \<close>
-    
+
+  ML_val \<open>#goal @{Isar.goal}\<close>
+    term 0 (**)
   apply (tactic \<open>HEADGOAL (
     resolve_tac @{context} @{thms bf\<^sub>T.induct}
     THEN_ALL_NEW (fn i => Subgoal.FOCUS (fn {context=ctx, prems=IH, ...} =>
       HEADGOAL (resolve_tac ctx [nth IH (i-1)])) @{context} i)
-    THEN_ALL_NEW tactac)\<close>
-)
-supply [[show_types]]
-  apply (tactic \<open>ALLGOALS tactac\<close>)
+    THEN_ALL_NEW tactac)\<close>)
+  done
+interpretation bf: dp_consistency bf .
+lemma "bf.consistentDP bf\<^sub>T"
   
+  (*by (dp_match induct: bf_inductS' simp: bf.simps simp\<^sub>T: bf\<^sub>T.simps)*)
+  (*
+  ( rule dp_consistency.consistentDP_intro,
+    rule induct,
+    unfold simp\<^sub>T;
+    rule dp_consistency.crel_vs_checkmem,
+    unfold simp,
+    ((match premises in _[transfer_rule]: _ (multi) \<Rightarrow> transfer_prover)
+      | (match conclusion in _ \<Rightarrow> transfer_prover)))
+*)
+  apply (tactic \<open>resolve_tac @{context} @{thms "dp_consistency.consistentDP_intro"} 1\<close>)
+  apply (tactic \<open>resolve_tac @{context} @{thms "bf_inductS'"} 1\<close>)
+   apply (tactic \<open>unfold_tac @{context} @{thms bf\<^sub>T.simps}\<close>)
+   apply (tactic \<open>ALLGOALS (resolve_tac @{context} @{thms "dp_consistency.crel_vs_checkmem"})\<close>)
+   apply (tactic \<open>unfold_tac @{context} @{thms bf.simps}\<close>)
+   apply (tactic \<open>Subgoal.FOCUS (fn {context=ctxt, prems, ...} => Transfer.transfer_prover_tac ctxt 1) @{context} 1\<close>)
+  apply (tactic \<open>Subgoal.FOCUS (fn {context=ctxt, prems, ...} =>
+  let
+    val ctxt' = fold Transfer.transfer_raw_add prems (Context.Proof ctxt) |> Context.proof_of;
+  in
+    Transfer.transfer_prover_start_tac ctxt' 1
+  end) @{context} 1\<close>)
+    oops
+      ML_val  \<open>
+Toplevel.proofs;
+Subgoal.subgoal
+\<close>
   term 0 (*
   apply (tactic \<open>HEADGOAL (
     resolve_tac @{context} @{thms bf\<^sub>T.induct}
