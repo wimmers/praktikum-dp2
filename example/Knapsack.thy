@@ -10,12 +10,11 @@ fun su :: "nat\<times>nat \<Rightarrow> nat" where
   "su (Suc i, W) = (if W < w (Suc i)
     then su (i, W)
     else max (su (i, W)) (w i + su (i, W - w i)))"
-  
-fun su\<^sub>T :: "nat\<times>nat \<Rightarrow>\<^sub>T nat" where
-  "su\<^sub>T$ (0, W) =CHECKMEM= If\<^sub>T . \<langle>W < w 0\<rangle> . \<langle>0\<rangle> . \<langle>w 0\<rangle>" |
-  "su\<^sub>T$ (Suc i, W) =CHECKMEM= If\<^sub>T . \<langle>W < w (Suc i)\<rangle>
-    . (su\<^sub>T (i, W))
-    . (max\<^sub>T . (su\<^sub>T (i, W)) . (plus\<^sub>T . \<langle>w i\<rangle> . (su\<^sub>T (i, W - w i))))"
+ML_file \<open>../scratch/Transform.ML\<close>
+local_setup \<open>
+lift_fun NONE;
+\<close>
+print_theorems
 
 interpretation su: dp_consistency su .
 

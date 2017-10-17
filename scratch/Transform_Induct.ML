@@ -1,5 +1,5 @@
-val f_head = @{term "bf"};
-val fT_head = @{term "bf\<^sub>T"};
+val local_func_head = @{term "bf"};
+val funcT_head = @{term "bf\<^sub>T"};
 
 val dom_type = @{typ "nat \<times> nat"};
 val ran_type = @{typ "int"};
@@ -11,7 +11,7 @@ val eq_rel_tp = (ran_type --> ran_type --> HOLogic.boolT);
 val eq_rel_lifted_tp = (ran_type --> ran_type_lifted --> HOLogic.boolT);
 
 val crel_vs_name = @{const_name "DP_CRelVS.dp_consistency.crel_vs"};
-val crel_vs_eq = Const (crel_vs_name, (dom_type --> ran_type) --> eq_rel_tp --> eq_rel_lifted_tp) $ f_head $ HOLogic.eq_const ran_type;
+val crel_vs_eq = Const (crel_vs_name, (dom_type --> ran_type) --> eq_rel_tp --> eq_rel_lifted_tp) $ local_func_head $ HOLogic.eq_const ran_type;
 
 fun mk_rel_fun_tp ((tp_a, tp_b), (tp_c, tp_d)) =
   (tp_a --> tp_b --> HOLogic.boolT) --> (tp_c --> tp_d --> HOLogic.boolT) -->
@@ -28,7 +28,8 @@ fun mk_rel_prod_tm tps = Const (@{const_name rel_prod}, mk_rel_prod_tp tps);
 
 
 fun mk_K1 tp tm =
-  Const (@{const_name K}, tp --> tp --> tp --> HOLogic.boolT) $ tm
+  Const (@{const_name K}, tp --> tp --> tp --> HOLogic.boolT)
+  $ tm;
 
 fun mk_K tm = mk_K1 (Term.type_of tm) tm;
 
@@ -50,7 +51,7 @@ fun replace_P prop =
   let
     val arg = strip_arg prop;
   in
-    (Term.abs ("param", dom_type) (crel_vs_eq $ (f_head $ Bound 0) $ (fT_head $ Bound 0))) $ arg |> HOLogic.mk_Trueprop
+    (Term.abs ("param", dom_type) (crel_vs_eq $ (local_func_head $ Bound 0) $ (funcT_head $ Bound 0))) $ arg |> HOLogic.mk_Trueprop
   end;
 
 fun transform_IH IH =
@@ -90,16 +91,29 @@ val _ = @{print} arg;
         val arg_tp = Term.type_of1 (bound_types, arg);
         val rel_fun = mk_rel_fun_tm ((arg_tp, arg_tp), (ran_type, ran_type_lifted)) $ arg_rel $ crel_vs_eq;
 
-        val IH2' = rel_fun $ f_head $ fT_head;
+        val IH2' = rel_fun $ local_func_head $ funcT_head;
       in
         IH2' |> HOLogic.mk_Trueprop
       end;
     
     val IH2s' = map transform_IH2 IH2s;
-    val IH' = Logic.list_all (params, Logic.list_implies (IH2s', replace_P IH_concl));
+    val param_Ks = map_index (fn (i, (_, tp)) => mk_K1 tp (Bound i) $ (Bound i) $ (Bound i) |> HOLogic.mk_Trueprop) params;
+    val IH' = Logic.list_all (params, Logic.list_implies (param_Ks @ IH2s', replace_P IH_concl));
   in
     IH'
   end;
+
+fun transform_induct_tac induct0 ctxt =
+  HEADGOAL (
+    resolve_tac ctxt [induct0]
+    THEN_ALL_NEW (fn i => Subgoal.FOCUS (fn {context=ctx, prems=IH, ...} =>
+      HEADGOAL (resolve_tac ctx [nth IH (i-1)])) ctxt i)
+    THEN_ALL_NEW (
+      resolve_tac ctxt @{thms K_self}
+      ORELSE' (resolve_tac ctxt @{thms rel_funI}
+        THEN' eresolve_tac ctxt @{thms rel_prod.induct}
+        THEN' (SELECT_GOAL (unfold_tac ctxt @{thms K_def eq_onp_def}))
+        THEN' clarsimp_tac ctxt)));
 
 fun transform_induct ctxt induct_thm =
   let
@@ -110,5 +124,5 @@ fun transform_induct ctxt induct_thm =
     val induct_prop' = Logic.list_all (params, Logic.list_implies (IHs', replace_P concl));
   in
 (*    Goal.prove ctxt [] [] induct_prop' (K (HEADGOAL (Proof_Context.fact_tac ctxt [induct_thm])))*)
-Goal.init (Thm.cterm_of ctxt induct_prop')
+Goal.prove ctxt [] [] induct_prop' (fn {context=ctxt, ...} => transform_induct_tac @{thm bf\<^sub>T.induct} ctxt)
   end;

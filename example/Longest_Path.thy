@@ -17,12 +17,11 @@ function wis :: "nat \<Rightarrow> nat" where
 termination
   by (relation "(\<lambda>p. size p) <*mlex*> {}") (auto intro: wf_mlex mlex_less simp: p_lt)
 
-function wis\<^sub>T :: "nat \<Rightarrow>\<^sub>T nat" where
-  "wis\<^sub>T$ 0 =CHECKMEM= \<langle>0\<rangle>" |
-  "wis\<^sub>T$ (Suc i) =CHECKMEM= max\<^sub>T . (plus\<^sub>T . (wis\<^sub>T (p (Suc i))) . \<langle>v i\<rangle>) . (wis\<^sub>T i)"
-  by pat_completeness auto
-termination
-  by (relation "(\<lambda>p. size p) <*mlex*> {}") (auto intro: wf_mlex mlex_less simp: p_lt)
+ML_file \<open>../scratch/Transform.ML\<close>
+local_setup \<open>
+lift_fun NONE;
+\<close>
+print_theorems
 
 interpretation wis: dp_consistency wis .
 

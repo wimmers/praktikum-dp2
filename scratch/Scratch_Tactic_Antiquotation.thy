@@ -21,8 +21,9 @@ fun pretty_thms_no_vars ctxt thms =
 fun pretty_cterms ctxt ctrms =
   Pretty.block (Pretty.commas (map (pretty_cterm ctxt) ctrms));
 
-fun foc_tac {prems, params, asms, concl, context, schematics} =
+fun foc_tac focus =
     let
+      val {prems, params, asms, concl, context, schematics}: Subgoal.focus = focus;
       fun assgn1 f1 f2 xs =
         let
         val out = map (fn (x, y) => Pretty.enum ":=" "" "" [f1 x, f2 y]) xs
@@ -37,7 +38,8 @@ fun foc_tac {prems, params, asms, concl, context, schematics} =
         ("assumptions: ", pretty_cterms context asms),
         ("conclusion: ", pretty_cterm context concl),
         ("premises: ", pretty_thms_no_vars context prems),
-        ("schematics: ", assgn2 (pretty_cterm context) (snd schematics))]
+        ("schematics: ", Pretty.str (@{make_string} schematics))
+        ]
     in
       tracing (Pretty.string_of (Pretty.chunks pps)); all_tac
     end

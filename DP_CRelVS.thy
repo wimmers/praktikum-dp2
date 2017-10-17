@@ -364,5 +364,11 @@ qed
   
 end
 end
-  
+
+definition K :: "'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" where
+  "K x \<equiv> eq_onp (op = x)"
+
+lemma K_self: "K x x x"
+  unfolding K_def eq_onp_def by auto
 end
+ 
