@@ -1,15 +1,17 @@
 theory DP_CRelVS
-  imports "./Monad" "./DP_Lifting"
+  imports "./Monad" "./DP_Lifting" "HOL-Library.RBT_Mapping"
 begin
   
 definition rel_imp :: "('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow> bool" where
   "rel_imp R R' \<equiv> \<forall>x y. R x y \<longrightarrow> R' x y"
 term 0 (**)
 
-locale dp_consistency =
-  mem_defs lookup for lookup :: "'mem \<Rightarrow> 'param \<rightharpoonup> 'result" +
-  fixes dp :: "'param \<Rightarrow> 'result"
+locale mem_correct = mem_defs +
   assumes correct: "lookup (update m k v) \<subseteq>\<^sub>m (lookup m)(k \<mapsto> v)"
+
+locale dp_consistency =
+  mem_correct lookup for lookup :: "'mem \<Rightarrow> 'param \<rightharpoonup> 'result" +
+  fixes dp :: "'param \<Rightarrow> 'result"
 begin
 
 context
@@ -377,6 +379,9 @@ begin
 
 sublocale dp_consistency "\<lambda> m k v. m(k\<mapsto>v)" id dp
   by standard (auto simp: map_le_def)
+
+sublocale rbt: dp_consistency "\<lambda> m k v. Mapping.update k v m" Mapping.lookup dp
+  by standard (simp add: map_le_def lookup_update')
 
 end
 
