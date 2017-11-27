@@ -1,5 +1,5 @@
 theory Bellman_Ford
-  imports "../DP_Lifting" "../DP_CRelVS" "../DP_Proof" "HOL-Library.Extended"
+  imports "../DP_Lifting" "../DP_CRelVS" "../DP_Proof" "HOL-Library.Extended" "TA_Impl.TA_Impl_Misc"
 begin                                        
 
 context
@@ -204,6 +204,263 @@ interpretation bf: dp_consistency bf .
 
 lemma "bf.consistentDP bf\<^sub>T"
   by (dp_match induct: bf\<^sub>T.crel_vs_induct simp: bf.simps simp\<^sub>T: bf\<^sub>T.simps)
+
+
+fun bf_path :: "nat \<times> nat \<Rightarrow> int extended \<times> nat option" where
+  "bf_path (0, j) = (if t = j then Fin 0 else \<infinity>, None)"
+| "bf_path (Suc k, j) =
+    fold
+      (\<lambda> (v, i) (v', i'). if v \<le> v' then (v, i) else (v', i'))
+      (map
+          (\<lambda>i. (plus (Fin (W j i)) (fst(bf_path (k, i))), Some i))
+          (upt 0 (Suc n)))
+      (fst (bf_path (k, j)), None)"
+
+local_setup \<open>
+lift_fun NONE
+\<close>
+print_theorems
+
+interpretation bf_path: dp_consistency bf_path .
+
+lemma "bf_path.consistentDP bf_path\<^sub>T"
+  by (dp_match induct: bf_path\<^sub>T.crel_vs_induct simp: bf_path.simps simp\<^sub>T: bf_path\<^sub>T.simps)
+
+definition extract_path :: "nat \<Rightarrow> (nat \<times> nat \<Rightarrow> nat option) \<Rightarrow> nat \<Rightarrow> nat list" where
+  "extract_path bound mem i =
+    rev (snd (
+      fold
+      (\<lambda> j (v, xs). case mem (j, v) of None \<Rightarrow> (v, xs) | Some i \<Rightarrow> (i, v # xs)) (rev [1..<Suc bound])
+      (i, [])
+    ))"
+
+lemma extract_path_inner_append:
+  "snd (fold (\<lambda> j (v, xs).
+    case mem (j, v) of None \<Rightarrow> (v, xs) | Some i \<Rightarrow> (i, v # xs)) (rev [1..<bound]) (i, ys)) @ xs
+  = snd (fold (\<lambda> j (v, xs).
+    case mem (j, v) of None \<Rightarrow> (v, xs) | Some i \<Rightarrow> (i, v # xs)) (rev [1..<bound]) (i, ys @ xs))"
+  by (induction bound arbitrary: i ys) (auto split: option.split)
+
+lemma hd_extract_path:
+  "hd (extract_path i mem v) = v" if "extract_path i mem v \<noteq> []"
+proof -
+  define f where "f \<equiv> (\<lambda> j (v, xs). case mem (j, v) of None \<Rightarrow> (v, xs) | Some i \<Rightarrow> (i, v # xs))"
+  have
+    "(\<exists> as. snd (fold f (rev [1..<bound]) (v, ys)) = as @ v # ys)
+    \<or> snd (fold f (rev [1..<bound]) (v, ys)) = ys" for bound ys
+  proof (induction bound arbitrary: v ys)
+    case 0
+    then show ?case
+      by simp
+  next
+    case (Suc bound)
+    then show ?case
+      apply simp
+      apply (subst (2) f_def)
+      apply (clarsimp split: option.split, safe)
+      subgoal
+       by (force simp: f_def)
+      subgoal premises prems for x
+        using prems(1) [of x "v # ys"] by fastforce
+      done
+  qed
+  from that this[of "Suc i" "[]"] show ?thesis
+    unfolding extract_path_def f_def[symmetric] by auto
+qed
+
+lemma weight_empty[simp]: "weight [] = 0"
+  unfolding weight_def by simp
+
+lemma fold_neq_startD:
+  "\<exists> acc'. \<exists> x \<in> set xs. fold f xs acc = f x acc'" if "fold f xs acc \<noteq> acc"
+  using that by (induction xs arbitrary: acc; force)
+
+lemma bf_pathD:
+  assumes "bf_path (Suc i, v) \<noteq> (fst (bf_path (i, v)), None)"
+  obtains w where "bf_path (Suc i, v) = (Fin (W v w) + fst (bf_path (i, w)), Some w)"
+proof -
+  {
+    fix i v k
+    define xs where "xs b = (map (\<lambda>k. (Fin (W v k) + fst (bf_path (i, k)), Some k)) [0..<b])" for b
+    define f where
+      "f = (\<lambda>(v :: int extended, i :: nat option) (v', i'). if v \<le> v' then (v, i) else (v', i'))"
+    have xs_Suc: "xs (Suc b) = xs b @ [(Fin (W v b) + fst (bf_path (i, b)), Some b)]" for b
+      unfolding xs_def by simp
+    have *: "f a b = a \<or> f a b = b" for a b
+      unfolding f_def by (auto split: prod.split_asm)
+    then have f_split: "P (f a b) \<longleftrightarrow> (f a b = a \<longrightarrow> P a) \<and> (f a b = b \<longrightarrow> P b)" for P a b
+      by metis
+    assume "fold f (xs k) (fst (bf_path (i, v)), None) \<noteq>
+    (fst (bf_path (i, v)), None)"
+    then have
+      "\<exists> w. fold f (xs k) (fst (bf_path (i, v)), None) = (Fin (W v w) + fst (bf_path (i, w)), Some w)"
+      apply (induction k)
+       apply (simp add: xs_def; fail)
+      by (subst f_split) (auto simp: xs_Suc)
+  } note * = this
+  show ?thesis
+    using assms by (simp only: bf_path.simps) (drule *, auto intro: that)
+qed  
+
+lemma extract_path_empty:
+  "bf_path (i, v) = bf_path (0, v)" if "extract_path i (snd o bf_path) v = []"
+  using that
+proof (induction i arbitrary: v)
+  case 0
+  then show ?case
+    by simp
+next
+  case (Suc i)
+  show ?case
+  proof (cases "bf_path (Suc i, v) = (fst (bf_path (i, v)), None)")
+    case True
+    then have "extract_path (Suc i) (snd \<circ> bf_path) v = extract_path i (snd o bf_path) v"
+      unfolding extract_path_def by simp
+    with Suc show ?thesis
+      by (simp only: True, simp)
+  next
+    case False
+    then obtain w where "bf_path (Suc i, v) = (Fin (W v w) + fst (bf_path (i, w)), Some w)"
+      by (fastforce elim: bf_pathD)
+    then have "extract_path (Suc i) (snd \<circ> bf_path) v \<noteq> []"
+      unfolding extract_path_def
+      by (simp del: bf_path.simps) (rule fold_acc_preserv, auto split: option.split prod.split)
+    with Suc.prems show ?thesis
+      by metis
+  qed
+qed
+
+lemma bf_path_bf[simp]:
+  "fst (bf_path (i, v)) = bf (i, v)"
+  apply (induction i arbitrary: v)
+   apply simp
+  apply (simp only: bf_path.simps bf.simps)
+  subgoal premises prems for i v
+  proof -
+    define f1 where
+      "f1 \<equiv> \<lambda>(v :: int extended, i :: nat option) (v', i'). if v \<le> v' then (v, i) else (v', i')"
+    define f2 where "f2 \<equiv> \<lambda>ia. (Fin (W v ia) + bf (i, ia), Some ia)"
+    define f3 where "f3 \<equiv> \<lambda>ia. Fin (W v ia) + bf (i, ia)"
+    have [simp]: "fst (f2 i) = f3 i" for i
+      unfolding f2_def f3_def by simp
+    have [simp]: "fst (f1 a b) = min (fst a) (fst b)" for a b
+      unfolding f1_def min_def by (auto split: prod.split)
+    have "fst (fold f1 (map f2 [0..<Suc n]) (bf (i, v), None)) =
+           fold min (map f3 [0..<Suc n]) (bf (i, v))" for i v n
+      by (induction n; simp)
+    then show ?thesis
+      by (simp add: f1_def f2_def f3_def)
+  qed
+  done
+
+lemma extract_path_empty':
+  "bf (i, v) = bf (0, v)" if "extract_path i (snd o bf_path) v = []"
+  by (subst bf_path_bf[symmetric]) (simp add: extract_path_empty[OF that])
+
+lemma extract_path_correct:
+  "Fin (weight (extract_path i (snd o bf_path) v)) = bf (i, v)" if "bf (i, v) \<noteq> \<infinity>"
+  using that
+proof (induction i arbitrary: v)
+case 0
+  then show ?case
+    unfolding extract_path_def by (simp split: if_split_asm)
+next
+  case (Suc i)
+  show ?case
+  proof (cases "bf_path (Suc i, v) = (bf (i, v), None)")
+    case True
+    then have "bf (Suc i, v) = bf (i, v)"
+      using bf_path_bf[of "Suc i" v] by (simp del: bf_path.simps bf.simps)
+    moreover with Suc.prems have "bf (i, v) \<noteq> \<infinity>"
+      by auto
+    moreover from True have
+      "extract_path (Suc i) (snd \<circ> bf_path) v = extract_path i (snd o bf_path) v"
+      unfolding extract_path_def by simp
+    ultimately show ?thesis
+      by (auto dest: Suc.IH simp only:)
+  next
+    case False
+    then obtain w where "bf_path (Suc i, v) = (Fin (W v w) + bf (i, w), Some w)"
+      using bf_pathD by auto
+    then have
+      "extract_path (Suc i) (snd \<circ> bf_path) v = v # extract_path i (snd o bf_path) w"
+      unfolding extract_path_def
+      by (auto simp del: bf_path.simps bf.simps split: option.split)
+         (subst extract_path_inner_append[simplified], simp)+
+    moreover from \<open>bf_path _ = _\<close> Suc.prems have "bf (Suc i, v) = Fin (W v w) + bf (i, w)"
+      using bf_path_bf[of "Suc i" v] by (simp del: bf_path.simps bf.simps)
+    moreover with Suc.prems have "bf (i, w) \<noteq> \<infinity>"
+      by auto
+    moreover have
+      "weight (v # extract_path i (snd \<circ> bf_path) w) =
+        (if extract_path i (snd \<circ> bf_path) w = []
+         then W v t else W v w + weight (extract_path i (snd \<circ> bf_path) w)
+        )"
+      using hd_extract_path[of i "snd \<circ> bf_path" w]
+      by (cases "extract_path i (snd \<circ> bf_path) w"; simp add: hd_extract_path)
+    ultimately show ?thesis
+      apply -
+      apply (drule Suc.IH)
+      apply (simp only: weight_Cons split: if_split)
+      apply (rule conjI)
+      apply (auto simp: extract_path_empty'; fail)
+       apply (auto simp only: plus_extended.simps(1)[symmetric]; fail)
+      done
+  qed
+qed
+
+definition extract_path' :: "nat \<Rightarrow> (nat \<times> nat \<rightharpoonup> nat option) \<Rightarrow> nat \<Rightarrow> nat list option" where
+  "extract_path' bound mem i =
+    map_option (rev o snd) (
+      fold
+      (\<lambda> j acc.
+        case acc of
+          None \<Rightarrow> None |
+          Some (v, xs) \<Rightarrow> case mem (j,v) of
+            None \<Rightarrow> None |
+            Some None \<Rightarrow> Some (v, xs) |
+            Some (Some i) \<Rightarrow> Some (i, v # xs)) (rev [1..<Suc bound]
+      )
+      (Some (i, []))
+    )"
+
+lemma
+  "extract_path i (snd \<circ> bf_path) v = xs"
+  if "extract_path' i (map_option snd o m) v = Some xs" "bf_path.cmem m"
+proof -
+  define f1 where
+    "f1 \<equiv> (\<lambda> j (v, xs). case (snd \<circ> bf_path) (j, v) of None \<Rightarrow> (v, xs) | Some i \<Rightarrow> (i, v # xs))"
+  define f2 where "f2 \<equiv>
+    (\<lambda> j acc.
+        case acc of
+          None \<Rightarrow> None |
+          Some (v, xs) \<Rightarrow> case (map_option snd o m) (j,v) of
+            None \<Rightarrow> None |
+            Some None \<Rightarrow> Some (v, xs) |
+            Some (Some i) \<Rightarrow> Some (i, v # xs)
+      )
+  "
+  have f2_f1: "f1 j acc = acc'" if "f2 j (Some acc) = Some acc'" for j acc acc'
+    using that \<open>bf_path.cmem m\<close>
+    by (auto simp: f1_def f2_def split: option.splits prod.splits elim: bf_path.cmem_elim)
+  have [simp]: "f2 j None = None" for j
+    unfolding f2_def by auto
+  have [simp]: "fold f2 xs None = None" for xs
+    by (induction xs; simp)
+
+  have "rev (snd (fold f1 (rev [1..<Suc i]) acc)) = xs"
+    if "map_option (rev \<circ> snd) (fold f2 (rev [1..<Suc i]) (Some acc)) = Some xs" "bf_path.cmem m"
+    for acc
+    using that
+    apply (induction i arbitrary: acc xs)
+     apply (simp; fail)
+    apply clarsimp
+    subgoal for i a b a' b'
+      by (cases "f2 (Suc i) (Some (a, b))"; fastforce dest: f2_f1)
+    done
+  with that show ?thesis
+    unfolding extract_path_def extract_path'_def f1_def[symmetric] f2_def[symmetric] by simp
+qed
 
 end (* Final Node *)
 
