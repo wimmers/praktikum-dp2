@@ -51,7 +51,8 @@ lemma OPT_0:
   unfolding OPT_def by simp
 
 lemma OPT_Suc:
-  "OPT (Suc i) v = min (OPT i v) (Min {OPT i w + Fin (W v w) | w. w \<le> n})" if "t \<le> n"
+  "OPT (Suc i) v = min (OPT i v) (Min {OPT i w + Fin (W v w) | w. w \<le> n})" (is "?lhs = ?rhs")
+  if "t \<le> n"
 proof -
   have fin': "finite {xs. length xs \<le> i \<and> set xs \<subseteq> {0..n}}" for i
     by (auto intro: finite_subset[OF _ finite_lists_length_le[OF finite_atLeastAtMost]])
@@ -63,7 +64,8 @@ proof -
     if "i > 0" for i v
     using that unfolding OPT_def
     by - (rule Min_in, auto 4 3 intro: finite_subset[OF _ fin, of _ v "Suc i"])
-  have le_1: "OPT i v \<ge> OPT (Suc i) v"
+
+  have "OPT i v \<ge> OPT (Suc i) v"
     unfolding OPT_def using fin by (auto 4 3 intro: Min_antimono)
   have subs:
     "(\<lambda>y. y + Fin (W v w)) ` {Fin (weight (w # xs)) |xs. length xs + 1 \<le> i \<and> set xs \<subseteq> {0..n}}
@@ -96,24 +98,27 @@ proof -
        (auto 4 4
          intro: finite_subset[OF _ fin[of _ "Suc i"]] exI[where x = "[]"] intro!: Min_antimono
        )
-  ultimately have le_2: "Min {local.OPT i w + Fin (W v w) |w. w \<le> n} \<ge> OPT (Suc i) v"
+  ultimately have "Min {local.OPT i w + Fin (W v w) |w. w \<le> n} \<ge> OPT (Suc i) v"
     by (auto intro!: Min.boundedI)
+  with \<open>OPT i v \<ge> _\<close> have "?lhs \<le> ?rhs"
+    by simp
+
   from OPT_in[of "Suc i" v] consider
     "OPT (Suc i) v = \<infinity>" | "t = v" "OPT (Suc i) v = Fin 0" |
     xs where "OPT (Suc i) v = Fin (weight (v # xs))" "length xs \<le> i" "set xs \<subseteq> {0..n}"
     by (auto split: if_split_asm)
-  then show ?thesis
+  then have "?lhs \<ge> ?rhs"
   proof cases
     case 1
-    with le_1 le_2 show ?thesis
-      by (force intro: sym[OF Min_eqI])
+    then show ?thesis
+      by simp
   next
     case 2
     then have "OPT i v \<le> OPT (Suc i) v"
       unfolding OPT_def using [[simproc add: finite_Collect]]
       by (auto 4 4 intro: finite_subset[OF _ fin', of _ "Suc i"] intro!: Min_le)
-    with le_1 le_2 show ?thesis
-      by (auto intro: sym[OF min_absorb1])
+    then show ?thesis
+      by (rule min.coboundedI1)
   next
     case xs: 3
     note [simp] = xs(1)
@@ -130,7 +135,7 @@ proof -
         also have "\<dots> \<ge> Min {OPT i w + Fin (W v w) |w. w \<le> n}"
           using \<open>t \<le> n\<close> by (auto intro: Min_le)
         finally show ?thesis
-          using le_1 le_2 by clarsimp (rule min_absorb2 sym)+
+          by (rule min.coboundedI2)
       next
         case False
         with \<open>_ = i\<close> have "xs \<noteq> []"
@@ -146,16 +151,18 @@ proof -
         also from \<open>xs \<noteq> []\<close> have "\<dots> = OPT (Suc i) v"
           by (cases xs) auto
         finally show ?thesis
-          using le_1 le_2 by clarsimp (rule min_absorb2 sym)+
+          by (rule min.coboundedI2)
       qed
     next
       case False
       with xs have "OPT i v \<le> OPT (Suc i) v"
         by (auto 4 4 intro: Min_le finite_subset[OF _ fin, of _ v "Suc i"] simp: OPT_def)
-      with le_1 le_2 show ?thesis
-        by (force intro: Min.boundedI sym[OF min_absorb1])
+      then show ?thesis
+        by (rule min.coboundedI1)
     qed
   qed
+  with \<open>?lhs \<le> ?rhs\<close> show ?thesis
+    by (rule order.antisym)
 qed
 
 
