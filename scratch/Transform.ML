@@ -24,7 +24,7 @@ fun extract_lhs (lhs: term) =
     (func_head, context, param)
   end;
 
-fun lift_fun term_opt = fn ctxt =>
+fun lift_fun term_checkmem term_crel_vs term_opt = fn ctxt =>
   let
     val func_info =
       case term_opt of
@@ -216,7 +216,7 @@ fun lift_fun term_opt = fn ctxt =>
           in
             get_first (fn check => check tm) checks |> the
           end;
-        fun add_checkmem tm = Const (@{const_name checkmem}, dom_type --> ran_type_lifted --> ran_type_lifted) $ param $ tm;
+        fun add_checkmem tm = term_checkmem $ param $ tm;
       in
         HOLogic.mk_eq (funcT_head $ param, lift_term [] rhs |> add_checkmem) |> HOLogic.mk_Trueprop
       end;
@@ -259,8 +259,7 @@ fun lift_fun term_opt = fn ctxt =>
         val eq_rel_tp = (ran_type --> ran_type --> HOLogic.boolT);
         val eq_rel_lifted_tp = (ran_type --> ran_type_lifted --> HOLogic.boolT);
         
-        val crel_vs_name = @{const_name "DP_CRelVS.dp_consistency.crel_vs"};
-        val crel_vs_eq = Const (crel_vs_name, (dom_type --> ran_type) --> eq_rel_tp --> eq_rel_lifted_tp) $ local_func_head $ HOLogic.eq_const ran_type;
+        val crel_vs_eq = term_crel_vs $ HOLogic.eq_const ran_type;
         
         fun mk_rel_fun_tp ((tp_a, tp_b), (tp_c, tp_d)) =
           (tp_a --> tp_b --> HOLogic.boolT) --> (tp_c --> tp_d --> HOLogic.boolT) -->

@@ -193,17 +193,20 @@ next
     by (simp add: OPT_Suc del: upt_Suc, subst Min.set_eq_fold[symmetric], auto simp: *)
 qed
 
+ML \<open>@{const_name mem_defs.checkmem}\<close> ML \<open>@{term checkmem}\<close> ML \<open>Const\<close>
+
+interpretation bf: dp_consistency_default bf .
 
 ML_file \<open>../scratch/Transform.ML\<close>
 local_setup \<open>
-lift_fun NONE
+lift_fun @{term bf.checkmem} @{term "bf.crel_vs :: (int extended \<Rightarrow> int extended \<Rightarrow> bool) \<Rightarrow> _"} NONE
 \<close>
 print_theorems
 
-interpretation bf: dp_consistency bf .
+thm dp_consistency.consistentDP_intro[OF bf.dp_consistency_axioms] bf.crel_vs_checkmem dp_consistency.crel_vs_checkmem[OF bf.dp_consistency_axioms]
 
 lemma "bf.consistentDP bf\<^sub>T"
-  by (dp_match induct: bf\<^sub>T.crel_vs_induct simp: bf.simps simp\<^sub>T: bf\<^sub>T.simps)
+  by (dp_match consistency: bf.dp_consistency_axioms induct: bf\<^sub>T.crel_vs_induct simp: bf.simps simp\<^sub>T: bf\<^sub>T.simps)
 
 
 fun bf_path :: "nat \<times> nat \<Rightarrow> int extended \<times> nat option" where

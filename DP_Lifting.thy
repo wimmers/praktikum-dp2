@@ -40,24 +40,32 @@ lemma return_app_return:
   "\<langle>f\<rangle> . \<langle>x\<rangle> = f x"
   unfolding fun_app_lifted_def left_identity ..
 term 0 (**)
-  
-definition checkmem :: "'param \<Rightarrow> ('param \<rightharpoonup> 'result, 'result) state \<Rightarrow> ('param \<rightharpoonup> 'result, 'result) state" where
+
+locale mem_defs =
+  fixes lookup :: "'mem \<Rightarrow> 'param \<rightharpoonup> 'result" and update :: "'mem \<Rightarrow> 'param \<Rightarrow> 'result \<Rightarrow> 'mem"
+begin
+
+definition checkmem :: "'param \<Rightarrow> ('mem, 'result) state \<Rightarrow> ('mem, 'result) state" where
   "checkmem param calc \<equiv> do {
     M \<leftarrow> get;
-    case M param of
+    case lookup M param of
       Some x \<Rightarrow> return x
     | None \<Rightarrow> do {
         x \<leftarrow> calc;
         M' \<leftarrow> get;
-        put (M'(param\<mapsto>x));
+        put (update M' param x);
         return x
       }
   }"
-  
-abbreviation checkmem_eq :: "('param \<Rightarrow>\<^sub>T 'result) \<Rightarrow> 'param \<Rightarrow> ('param \<rightharpoonup> 'result, 'result) state \<Rightarrow> bool" ("_$ _ =CHECKMEM= _" [1000,51] 51) where
+
+abbreviation checkmem_eq ::
+  "('param =='mem\<Longrightarrow> 'result) \<Rightarrow> 'param \<Rightarrow> ('mem, 'result) state \<Rightarrow> bool"
+  ("_$ _ =CHECKMEM= _" [1000,51] 51) where
   "(dp\<^sub>T$ param =CHECKMEM= calc) \<equiv> (dp\<^sub>T param = checkmem param calc)"
 term 0 (**)
-  
+
+end (* Mem Defs *)
+
 context
   includes lifting_syntax
 begin

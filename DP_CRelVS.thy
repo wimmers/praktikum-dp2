@@ -7,22 +7,24 @@ definition rel_imp :: "('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow> ('
 term 0 (**)
 
 locale dp_consistency =
+  mem_defs lookup for lookup :: "'mem \<Rightarrow> 'param \<rightharpoonup> 'result" +
   fixes dp :: "'param \<Rightarrow> 'result"
+  assumes correct: "lookup (update m k v) \<subseteq>\<^sub>m (lookup m)(k \<mapsto> v)"
 begin
-  
+
 context
   includes lifting_syntax
 begin
   
   (* Predicates *)
-definition cmem :: "('param \<rightharpoonup> 'result) \<Rightarrow> bool" where
-  "cmem M \<equiv> \<forall>param\<in>dom M. M param = Some (dp param)"
+definition cmem :: "'mem \<Rightarrow> bool" where
+  "cmem M \<equiv> \<forall>param\<in>dom (lookup M). lookup M param = Some (dp param)"
 term 0 (**)
   
-definition crel_vs :: "('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow> 'a \<Rightarrow> ('param \<rightharpoonup> 'result, 'b) state \<Rightarrow> bool" where
+definition crel_vs :: "('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow> 'a \<Rightarrow> ('mem, 'b) state \<Rightarrow> bool" where
   "crel_vs R v s \<equiv> \<forall>M. cmem M \<longrightarrow> (case runState s M of (v', M') \<Rightarrow> R v v' \<and> cmem M')"
   
-definition crel_vs_alt :: "('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow> 'a \<Rightarrow> ('param \<rightharpoonup> 'result, 'b) state \<Rightarrow> bool" where
+definition crel_vs_alt :: "('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow> 'a \<Rightarrow> ('mem, 'b) state \<Rightarrow> bool" where
   "crel_vs_alt R v s \<equiv> pred_fun cmem (pred_prod (R v) cmem) (runState s)"
 
 abbreviation rel_fun_lifted :: "('a \<Rightarrow> 'c \<Rightarrow> bool) \<Rightarrow> ('b \<Rightarrow> 'd \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('c ==_\<Longrightarrow> 'd) \<Rightarrow> bool" (infixr "===>\<^sub>T" 55) where
@@ -33,19 +35,19 @@ lemma "crel_vs = crel_vs_alt"
   unfolding crel_vs_def crel_vs_alt_def
   by (fastforce split: pred_prod_split)
 
-definition consistentDP :: "('param \<Rightarrow>\<^sub>T 'result) \<Rightarrow> bool" where
+definition consistentDP :: "('param == 'mem \<Longrightarrow> 'result) \<Rightarrow> bool" where
   "consistentDP \<equiv> (op = ===> crel_vs op =) dp"
 term 0 (**)
   
   (* cmem *)
 lemma cmem_intro:
-  assumes "\<And>param v. M param = Some v \<Longrightarrow> v = dp param"
+  assumes "\<And>param v. lookup M param = Some v \<Longrightarrow> v = dp param"
   shows "cmem M"
   using assms unfolding cmem_def by blast
 term 0 (**)
   
 lemma cmem_elim:
-  assumes "cmem M" "M param = Some v"
+  assumes "cmem M" "lookup M param = Some v"
   obtains "dp param = v"
   using assms unfolding cmem_def dom_def by auto
 term 0 (**)
@@ -82,8 +84,12 @@ term 0 (**)
   
   (* Low level operators *)
 lemma cmem_upd:
-  "\<lbrakk>cmem M; v = dp param\<rbrakk> \<Longrightarrow> cmem (M(param\<mapsto>v))"
-  unfolding cmem_def by auto
+  "\<lbrakk>cmem M; v = dp param\<rbrakk> \<Longrightarrow> cmem (update M param v)"
+  using correct[of M param v] unfolding cmem_def map_le_def
+  apply clarify
+  subgoal for k y
+    by (cases "k = param"; force)
+  done
 term 0 (**)
   
 lemma crel_vs_get:
@@ -363,6 +369,15 @@ proof -
 qed
   
 end
+end
+
+locale dp_consistency_default =
+  fixes dp :: "'param \<Rightarrow> 'result"
+begin
+
+sublocale dp_consistency "\<lambda> m k v. m(k\<mapsto>v)" id dp
+  by standard (auto simp: map_le_def)
+
 end
 
 definition K :: "'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" where
