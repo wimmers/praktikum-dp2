@@ -10,7 +10,7 @@ locale mem_correct = mem_defs +
   assumes correct: "lookup (update m k v) \<subseteq>\<^sub>m (lookup m)(k \<mapsto> v)"
 
 locale dp_consistency =
-  mem_correct lookup for lookup :: "'mem \<Rightarrow> 'param \<rightharpoonup> 'result" +
+  mem_correct lookup update for lookup :: "'mem \<Rightarrow> 'param \<rightharpoonup> 'result" and update +
   fixes dp :: "'param \<Rightarrow> 'result"
 begin
 
@@ -373,15 +373,23 @@ qed
 end
 end
 
+lemma mem_correct_default:
+  "mem_correct id (\<lambda> m k v. m(k\<mapsto>v))"
+  by standard (auto simp: map_le_def)
+
+lemma mem_correct_rbt_mapping:
+  "mem_correct Mapping.lookup (\<lambda> m k v. Mapping.update k v m)"
+  by standard (simp add: map_le_def lookup_update')
+
 locale dp_consistency_default =
   fixes dp :: "'param \<Rightarrow> 'result"
 begin
 
-sublocale dp_consistency "\<lambda> m k v. m(k\<mapsto>v)" id dp
-  by standard (auto simp: map_le_def)
+sublocale dp_consistency id "\<lambda> m k v. m(k\<mapsto>v)" dp
+  by (intro dp_consistency.intro mem_correct_default)
 
-sublocale rbt: dp_consistency "\<lambda> m k v. Mapping.update k v m" Mapping.lookup dp
-  by standard (simp add: map_le_def lookup_update')
+sublocale rbt: dp_consistency Mapping.lookup "\<lambda> m k v. Mapping.update k v m" dp
+  by (intro dp_consistency.intro mem_correct_rbt_mapping)
 
 end
 
