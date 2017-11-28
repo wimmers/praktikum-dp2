@@ -42,18 +42,18 @@ lemma return_app_return:
 term 0 (**)
 
 locale mem_defs =
-  fixes lookup :: "'mem \<Rightarrow> 'param \<rightharpoonup> 'result" and update :: "'mem \<Rightarrow> 'param \<Rightarrow> 'result \<Rightarrow> 'mem"
+  fixes lookup :: "'param \<Rightarrow> ('mem, 'result option) state"
+    and update :: "'param \<Rightarrow> 'result =='mem\<Longrightarrow> unit"
 begin
 
 definition checkmem :: "'param \<Rightarrow> ('mem, 'result) state \<Rightarrow> ('mem, 'result) state" where
   "checkmem param calc \<equiv> do {
-    M \<leftarrow> get;
-    case lookup M param of
+    x \<leftarrow> lookup param;
+    case x of
       Some x \<Rightarrow> return x
     | None \<Rightarrow> do {
         x \<leftarrow> calc;
-        M' \<leftarrow> get;
-        put (update M' param x);
+        update param x;
         return x
       }
   }"
