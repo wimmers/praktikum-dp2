@@ -64,6 +64,9 @@ abbreviation checkmem_eq ::
   "(dp\<^sub>T$ param =CHECKMEM= calc) \<equiv> (dp\<^sub>T param = checkmem param calc)"
 term 0 (**)
 
+definition map_of where
+  "map_of heap k = fst (runState (lookup k) heap)"
+
 end (* Mem Defs *)
 
 context
