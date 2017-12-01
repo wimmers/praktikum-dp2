@@ -452,7 +452,7 @@ locale dp_consistency_default =
 begin
 
 sublocale dp_consistency
-  "\<lambda> k. do {m \<leftarrow> get; return (m k)}" "\<lambda> k v. do {m \<leftarrow> get; put (m(k\<mapsto>v))}" "\<lambda> _. True"dp
+  "\<lambda> k. do {m \<leftarrow> get; return (m k)}" "\<lambda> k v. do {m \<leftarrow> get; put (m(k\<mapsto>v))}" "\<lambda> _. True" dp
   by (intro dp_consistency.intro mem_correct_default)
 
 sublocale rbt: dp_consistency
