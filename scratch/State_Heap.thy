@@ -157,16 +157,12 @@ begin
 lemma lookup'_correct:
   "mem_defs.map_of lookup' (snd (runState (lookup' k) m)) \<subseteq>\<^sub>m (mem_defs.map_of lookup' m)"
   unfolding mem_defs.map_of_def map_le_def lookup'_def
-  apply auto
-  by (metis (mono_tags, lifting) domIff lookup_correct map_le_def map_of_heap_def option.simps(3))
+  by simp (metis (mono_tags, lifting) domIff lookup_correct map_le_def map_of_heap_def)
 
 lemma update'_correct:
   "mem_defs.map_of lookup' (snd (runState (update' k v) m)) \<subseteq>\<^sub>m mem_defs.map_of lookup' m(k \<mapsto> v)"
-  unfolding mem_defs.map_of_def map_le_def lookup'_def update'_def
-  apply auto
-   apply (smt domIff fun_upd_apply map_le_def map_of_heap_def option.simps(1) option.simps(3) update_correct)
-  apply (smt domIff fun_upd_apply map_le_def map_of_heap_def option.simps(1) option.simps(3) update_correct)
-  done
+  unfolding mem_defs.map_of_def map_le_def lookup'_def update'_def using update_correct[of k v m]
+  by (auto split: if_split_asm simp: map_le_def map_of_heap_def)
 
 lemma lookup'_inv:
   "DP_CRelVS.lift_p P (lookup' k)"
