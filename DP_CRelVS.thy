@@ -430,38 +430,6 @@ end (* Lifting Syntax *)
 
 end (* Consistency *)
 
-term mem_correct
-
-lemma mem_correct_default:
-  "mem_correct (\<lambda> k. do {m \<leftarrow> get; return (m k)}) (\<lambda> k v. do {m \<leftarrow> get; put (m(k\<mapsto>v))}) (\<lambda> _. True)"
-  by standard
-     (auto simp: map_le_def mem_defs.map_of_def bind_def get_def return_def put_def lift_p_def)
-
-lemma mem_correct_rbt_mapping:
-  "mem_correct
-    (\<lambda> k. do {m \<leftarrow> get; return (Mapping.lookup m k)})
-    (\<lambda> k v. do {m \<leftarrow> get; put (Mapping.update k v m)})
-    (\<lambda> _. True)"
-  by standard
-     (auto simp:
-        map_le_def mem_defs.map_of_def bind_def get_def return_def put_def lookup_update' lift_p_def
-     )
-
-locale dp_consistency_default =
-  fixes dp :: "'param \<Rightarrow> 'result"
-begin
-
-sublocale dp_consistency
-  "\<lambda> k. do {m \<leftarrow> get; return (m k)}" "\<lambda> k v. do {m \<leftarrow> get; put (m(k\<mapsto>v))}" "\<lambda> _. True" dp
-  by (intro dp_consistency.intro mem_correct_default)
-
-sublocale rbt: dp_consistency
-  "\<lambda> k. do {m \<leftarrow> get; return (Mapping.lookup m k)}"
-  "\<lambda> k v. do {m \<leftarrow> get; put (Mapping.update k v m)}" "\<lambda> _. True" dp
-  by (intro dp_consistency.intro mem_correct_rbt_mapping)
-
-end
-
 definition K :: "'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" where
   "K x \<equiv> eq_onp (op = x)"
 
