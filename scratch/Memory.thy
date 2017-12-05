@@ -276,6 +276,19 @@ end (* Key function *)
 
 end (* Lookup & Update w/ Empty *)
 
+lemma mem_correct_empty_default:
+  "mem_correct_empty (\<lambda> k. do {m \<leftarrow> get; return (m k)}) (\<lambda> k v. do {m \<leftarrow> get; put (m(k\<mapsto>v))}) (\<lambda> _. True) Map.empty"
+  by (intro mem_correct_empty.intro[OF mem_correct_default] mem_correct_empty_axioms.intro)
+     (auto simp: mem_defs.map_of_def map_le_def bind_def get_def return_def)
+
+lemma mem_correct_rbt_empty_mapping:
+  "mem_correct_empty
+    (\<lambda> k. do {m \<leftarrow> get; return (Mapping.lookup m k)})
+    (\<lambda> k v. do {m \<leftarrow> get; put (Mapping.update k v m)})
+    (\<lambda> _. True)
+    Mapping.empty"
+  by (intro mem_correct_empty.intro[OF mem_correct_rbt_mapping] mem_correct_empty_axioms.intro)
+     (auto simp: mem_defs.map_of_def map_le_def bind_def get_def return_def lookup_empty)
 
 locale dp_consistency_default =
   fixes dp :: "'param \<Rightarrow> 'result"
