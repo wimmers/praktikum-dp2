@@ -125,7 +125,7 @@ lemma dom_empty[simp]:
   "dom (map_of empty) = {}"
   using empty_correct by (auto dest: map_le_implies_dom_le)
 
-lemma
+lemma mem_correct_pair:
   "mem_correct lookup_pair update_pair inv_pair"
 proof (standard, goal_cases)
   case (1 k) -- "Lookup invariant"

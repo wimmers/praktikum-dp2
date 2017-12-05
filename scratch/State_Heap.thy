@@ -41,12 +41,12 @@ lemma lift_p_E:
 
 end
 
-locale heap_mem =
+definition "state_of s \<equiv> State (\<lambda> heap. the (execute s heap))"
+
+locale heap_mem_defs =
   fixes P :: "heap \<Rightarrow> bool"
     and lookup :: "'k \<Rightarrow> 'v option Heap"
     and update :: "'k \<Rightarrow> 'v \<Rightarrow> unit Heap"
-  assumes lookup_inv: "lift_p P (lookup k)"
-  assumes update_inv: "lift_p P (update k v)"
 begin
 
 definition rel_state :: "('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow> (heap, 'a) state \<Rightarrow> 'b Heap \<Rightarrow> bool" where
@@ -57,27 +57,40 @@ definition rel_state :: "('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow> 
 
 definition "lookup' k \<equiv> State (\<lambda> heap. the (execute (lookup k) heap))"
 
+definition "update' k v \<equiv> State (\<lambda> heap. the (execute (update k v) heap))"
+
+definition "heap_get = Heap_Monad.Heap (\<lambda> heap. Some (heap, heap))"
+
+definition checkmem_heap :: "'k \<Rightarrow> 'v Heap \<Rightarrow> 'v Heap" where
+  "checkmem_heap param calc \<equiv>
+    Heap_Monad.bind (lookup param) (\<lambda> x.
+    case x of
+      Some x \<Rightarrow> return x
+    | None \<Rightarrow> Heap_Monad.bind calc (\<lambda> x.
+        Heap_Monad.bind (update param x) (\<lambda> _.
+        return x
+      )
+    )
+  )
+  "
+
+definition map_of_heap where
+  "map_of_heap heap k = fst (the (execute (lookup k) heap))"
+
+end (* Heap Mem Defs *)
+
+locale heap_inv = heap_mem_defs _ lookup for lookup :: "'k \<Rightarrow> 'v option Heap"  +
+  assumes lookup_inv: "lift_p P (lookup k)"
+  assumes update_inv: "lift_p P (update k v)"
+begin
+
 lemma rel_state_lookup:
   "rel_state (op =) (lookup' k) (lookup k)"
   unfolding rel_state_def lookup'_def using lookup_inv[of k] by (auto intro: lift_p_P')
 
-definition "update' k v \<equiv> State (\<lambda> heap. the (execute (update k v) heap))"
-
 lemma rel_state_update:
   "rel_state (op =) (update' k v) (update k v)"
   unfolding rel_state_def update'_def using update_inv[of k v] by (auto intro: lift_p_P')
-
-context
-  includes lifting_syntax
-begin
-
-lemma transfer_lookup:
-  "(op = ===> rel_state (op =)) lookup' lookup"
-  unfolding rel_fun_def by (auto intro: rel_state_lookup)
-
-lemma transfer_update:
-  "(op = ===> op = ===> rel_state (op =)) update' update"
-  unfolding rel_fun_def by (auto intro: rel_state_update)
 
 lemma rel_state_elim:
   assumes "rel_state R f g" "P heap"
@@ -103,6 +116,18 @@ lemma rel_state_intro:
    apply (auto intro: assms(2))
   done
 
+context
+  includes lifting_syntax
+begin
+
+lemma transfer_lookup:
+  "(op = ===> rel_state (op =)) lookup' lookup"
+  unfolding rel_fun_def by (auto intro: rel_state_lookup)
+
+lemma transfer_update:
+  "(op = ===> op = ===> rel_state (op =)) update' update"
+  unfolding rel_fun_def by (auto intro: rel_state_update)
+
 lemma transfer_bind[transfer_rule]:
   "(rel_state R ===> (R ===> rel_state Q) ===> rel_state Q) Monad.bind Heap_Monad.bind"
   unfolding rel_fun_def Monad.bind_def Heap_Monad.bind_def
@@ -118,25 +143,9 @@ lemma fun_app_lifted_transfer:
       (op .) (\<lambda> f\<^sub>T' x\<^sub>T'. f\<^sub>T' \<bind> (\<lambda> f. x\<^sub>T' \<bind> (\<lambda> x. f x)))"
   unfolding fun_app_lifted_def by transfer_prover
 
-definition
-  "heap_get = Heap_Monad.Heap (\<lambda> heap. Some (heap, heap))"
-
 lemma transfer_get[transfer_rule]:
   "rel_state op = Monad.get heap_get"
   unfolding Monad.get_def heap_get_def by (auto intro: rel_state_intro)
-
-definition checkmem_heap :: "'k \<Rightarrow> 'v Heap \<Rightarrow> 'v Heap" where
-  "checkmem_heap param calc \<equiv>
-    Heap_Monad.bind (lookup param) (\<lambda> x.
-    case x of
-      Some x \<Rightarrow> return x
-    | None \<Rightarrow> Heap_Monad.bind calc (\<lambda> x.
-        Heap_Monad.bind (update param x) (\<lambda> _.
-        return x
-      )
-    )
-  )
-  "
 
 lemma transfer_checkmem_heap:
   "(op = ===> rel_state op = ===> rel_state op =)
@@ -144,10 +153,12 @@ lemma transfer_checkmem_heap:
   supply [transfer_rule] = transfer_lookup transfer_update
   unfolding mem_defs.checkmem_def checkmem_heap_def by transfer_prover
 
-definition map_of_heap where
-  "map_of_heap heap k = fst (the (execute (lookup k) heap))"
+end (* Lifting Syntax *)
 
-context
+end (* Heap Invariant *)
+
+locale heap_correct =
+  heap_inv +
   assumes
     lookup_correct: "map_of_heap (snd (the (execute (lookup k) m))) \<subseteq>\<^sub>m (map_of_heap m)"
       and
@@ -172,23 +183,43 @@ lemma update'_inv:
   "DP_CRelVS.lift_p P (update' k v)"
   unfolding DP_CRelVS.lift_p_def update'_def by (auto elim: lift_p_P'[OF update_inv])
 
-interpretation state: mem_correct lookup' update' P
+lemma mem_correct_heap: "mem_correct lookup' update' P"
   by (intro mem_correct.intro lookup'_correct update'_correct lookup'_inv update'_inv)
 
-context
+end (* Heap correct *)
+
+lemma rel_fun_comp:
+  includes lifting_syntax
+  assumes "(R1 ===> S1) f g" "(R2 ===> S2) g h"
+  shows "(R1 OO R2 ===> S1 OO S2) f h"
+  using assms by (auto intro!: rel_funI dest!: rel_funD)
+
+lemma rel_fun_comp1:
+  includes lifting_syntax
+  assumes "(R1 ===> S1) f g" "(R2 ===> S2) g h" "R' = R1 OO R2"
+  shows "(R' ===> S1 OO S2) f h"
+  using assms rel_fun_comp by metis
+
+lemma rel_fun_comp2:
+  includes lifting_syntax
+  assumes "(R1 ===> S1) f g" "(R2 ===> S2) g h" "S' = S1 OO S2"
+  shows "(R1 OO R2 ===> S') f h"
+  using assms rel_fun_comp by metis
+
+locale dp_heap =
+  heap_correct  _ _ lookup for lookup :: "'k \<Rightarrow> 'v option Heap" +
   fixes dp :: "'k \<Rightarrow> 'v"
 begin
 
-interpretation dp_consistency lookup' update' P dp ..
+interpretation state: mem_correct lookup' update' P
+  by (rule mem_correct_heap)
 
-print_statement crel_vs_def rel_state_def
+interpretation dp_consistency lookup' update' P dp ..
 
 definition "crel_vs' R v f \<equiv>
   \<forall>heap. P heap \<and> cmem heap \<longrightarrow>
     (case execute f heap of None \<Rightarrow> False | Some (v', heap') \<Rightarrow> P heap' \<and> R v v' \<and> cmem heap')
 "
-
-definition "state_of s \<equiv> State (\<lambda> heap. the (execute s heap))"
 
 lemma crel_vs'_execute_None:
   False if "crel_vs' R a b" "execute b heap = None" "P heap" "cmem heap"
@@ -211,20 +242,9 @@ lemma crel_vs_state_of:
 lemma crel_vs'I: "crel_vs' R a b" if "(crel_vs R OO rel_state (op =)) a b"
   using that by (auto 4 3 elim: crel_vs_elim rel_state_elim simp: crel_vs'_def)
 
-lemma rel_fun_comp:
-  assumes "(R1 ===> S1) f g" "(R2 ===> S2) g h"
-  shows "(R1 OO R2 ===> S1 OO S2) f h"
-  using assms by (auto intro!: rel_funI dest!: rel_funD)
-
-lemma rel_fun_comp1:
-  assumes "(R1 ===> S1) f g" "(R2 ===> S2) g h" "R' = R1 OO R2"
-  shows "(R' ===> S1 OO S2) f h"
-  using assms rel_fun_comp by metis
-
-lemma rel_fun_comp2:
-  assumes "(R1 ===> S1) f g" "(R2 ===> S2) g h" "S' = S1 OO S2"
-  shows "(R1 OO R2 ===> S') f h"
-  using assms rel_fun_comp by metis
+context
+  includes lifting_syntax
+begin
 
 lemma transfer'_return:
   "(R ===> crel_vs' R) (\<lambda> x. x) return"
@@ -236,9 +256,8 @@ proof -
 qed
 
 lemma crel_vs_return:
-  "\<lbrakk>R x y\<rbrakk> \<Longrightarrow> crel_vs' R x (return y)"
-  by (rule transfer'_return[unfolded rel_fun_def, rule_format])
-term 0 (**)
+  "crel_vs' R x (return y)" if "R x y"
+  using that by (rule transfer'_return[unfolded rel_fun_def, rule_format])
 
 lemma bind_transfer[transfer_rule]:
   "(crel_vs' R0 ===> (R0 ===> crel_vs' R1) ===> crel_vs' R1) (\<lambda>v f. f v) (op \<bind>)"
@@ -274,11 +293,19 @@ lemma transfer_fun_app_lifted[transfer_rule]:
     (\<lambda> f x. f x) (\<lambda> f\<^sub>T' x\<^sub>T'. f\<^sub>T' \<bind> (\<lambda> f. x\<^sub>T' \<bind> (\<lambda> x. f x)))"
   unfolding fun_app_lifted_def by transfer_prover
 
+end (* Lifting Syntax *)
+
 end (* Dynamic Programming Problem *)
 
-context
-  fixes dp :: "'k \<Rightarrow> 'v"
+context heap_correct
 begin
+
+context
+  fixes dp :: "'a \<Rightarrow> 'b"
+begin
+
+interpretation state: mem_correct lookup' update' P
+  by (rule mem_correct_heap)
 
 interpretation dp_consistency lookup' update' P dp ..
 
@@ -320,6 +347,10 @@ proof (intro ext)
     using that by (auto 4 3 elim: crel_vs_elim rel_state_elim simp: crel_vs1_def)
   ultimately show "crel_vs1 R a b = (crel_vs R OO rel_state (op =)) a b" ..
 qed
+
+context
+  includes lifting_syntax
+begin
 
 lemma transfer_return1:
   "(R ===> crel_vs1 R) (\<lambda> x. x) return"
@@ -390,12 +421,10 @@ lemma bind_transfer1:
    apply (erule crel_vs_rel_state)
   by (auto 4 4 dest: rel_funD intro: that elim: rel_state_state_of simp: crel_vs1_alt_def[symmetric])
 
+end (* Lifting Syntax *)
+
 end (* Dynamic Programming Problem *)
 
 end (* Correctness *)
-
-end (* Lifting Syntax *)
-
-end (* Lookup & Update *)
 
 end (* Theory *)
