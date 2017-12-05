@@ -255,7 +255,7 @@ proof -
     by (blast intro: rel_fun_mono crel_vs'I)
 qed
 
-lemma crel_vs_return:
+lemma crel_vs'_return:
   "crel_vs' R x (return y)" if "R x y"
   using that by (rule transfer'_return[unfolded rel_fun_def, rule_format])
 
@@ -286,7 +286,7 @@ lemma crel_vs'_checkmem:
   "crel_vs' op = (dp param) (checkmem_heap param s)" if "crel_vs' op = (dp param) s"
   unfolding checkmem_heap_def
   by (rule bind_transfer[unfolded rel_fun_def, rule_format, OF crel_vs'_lookup])
-     (auto 4 3 split: option.split_asm intro: crel_vs_bind_eq crel_vs'_update crel_vs_return that)
+     (auto 4 3 split: option.split_asm intro: crel_vs_bind_eq crel_vs'_update crel_vs'_return that)
 
 lemma transfer_fun_app_lifted[transfer_rule]:
   "(crel_vs' (R0 ===> crel_vs' R1) ===> crel_vs' R0 ===> crel_vs' R1)
