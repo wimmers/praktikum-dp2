@@ -159,21 +159,22 @@ end (* Heap Invariant *)
 
 locale heap_correct =
   heap_inv +
-  assumes
-    lookup_correct: "map_of_heap (snd (the (execute (lookup k) m))) \<subseteq>\<^sub>m (map_of_heap m)"
-      and
-    update_correct: "map_of_heap (snd (the (execute (update k v) m))) \<subseteq>\<^sub>m (map_of_heap m)(k \<mapsto> v)"
+  assumes lookup_correct:
+      "P m \<Longrightarrow> map_of_heap (snd (the (execute (lookup k) m))) \<subseteq>\<^sub>m (map_of_heap m)"
+  and update_correct:
+      "P m \<Longrightarrow> map_of_heap (snd (the (execute (update k v) m))) \<subseteq>\<^sub>m (map_of_heap m)(k \<mapsto> v)"
 begin
 
 lemma lookup'_correct:
-  "mem_defs.map_of lookup' (snd (runState (lookup' k) m)) \<subseteq>\<^sub>m (mem_defs.map_of lookup' m)"
-  unfolding mem_defs.map_of_def map_le_def lookup'_def
+  "mem_defs.map_of lookup' (snd (runState (lookup' k) m)) \<subseteq>\<^sub>m (mem_defs.map_of lookup' m)" if "P m"
+  using \<open>P m\<close> unfolding mem_defs.map_of_def map_le_def lookup'_def
   by simp (metis (mono_tags, lifting) domIff lookup_correct map_le_def map_of_heap_def)
 
 lemma update'_correct:
   "mem_defs.map_of lookup' (snd (runState (update' k v) m)) \<subseteq>\<^sub>m mem_defs.map_of lookup' m(k \<mapsto> v)"
-  unfolding mem_defs.map_of_def map_le_def lookup'_def update'_def using update_correct[of k v m]
-  by (auto split: if_split_asm simp: map_le_def map_of_heap_def)
+  if "P m"
+  unfolding mem_defs.map_of_def map_le_def lookup'_def update'_def
+  using update_correct[of m k v] that by (auto split: if_split_asm simp: map_le_def map_of_heap_def)
 
 lemma lookup'_inv:
   "DP_CRelVS.lift_p P (lookup' k)"
