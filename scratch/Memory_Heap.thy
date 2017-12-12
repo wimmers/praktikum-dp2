@@ -92,11 +92,13 @@ definition
         if k' = k2 then
           Heap_Monad.bind (!m_ref2) (\<lambda> m. mem_update m (key2 k) v)
         else
-          Heap_Monad.bind mem_empty (\<lambda> m.
-            Heap_Monad.bind (!m_ref1) (\<lambda> m1.
-              k_ref2 := k1 \<then> k_ref1 := k' \<then> m_ref2 := m1 \<then> m_ref1 := m
+          Heap_Monad.bind (!k_ref1) (\<lambda> k1.
+            Heap_Monad.bind mem_empty (\<lambda> m.
+              Heap_Monad.bind (!m_ref1) (\<lambda> m1.
+                k_ref2 := k1 \<then> k_ref1 := k' \<then> m_ref2 := m1 \<then> m_ref1 := m
+              )
             )
-          )
+          ) \<then> Heap_Monad.bind (!m_ref1) (\<lambda> m. mem_update m (key2 k) v)
         )
       )
     )
@@ -104,36 +106,16 @@ definition
    "
 
 definition
-  "inv_pair heap = (
-    let
-      k1 = Ref.get heap k_ref1;
-      k2 = Ref.get heap k_ref2;
-      m1 = Ref.get heap m_ref1;
-      m2 = Ref.get heap m_ref2
-    in
-    (\<forall> k \<in> dom (heap_mem_defs.map_of_heap (mem_lookup m1) heap). \<exists> k'. key1 k' = k1 \<and> key2 k' = k) \<and>
-    (\<forall> k \<in> dom (heap_mem_defs.map_of_heap (mem_lookup m2) heap). \<exists> k'. key1 k' = k2 \<and> key2 k' = k) \<and>
-    k1 \<noteq> k2 \<and> P TYPE('v) m1 heap \<and> P TYPE('v) m2 heap
-  )"
-
-definition
   "inv_pair_weak heap = (
     let
       m1 = Ref.get heap m_ref1;
       m2 = Ref.get heap m_ref2
-    in P TYPE('v) m1 heap \<and> P TYPE('v) m2 heap
-      \<and> Array.length heap m1 = size \<and> Array.length heap m2 = size
+    in Array.length heap m1 = size \<and> Array.length heap m2 = size
       \<and> Ref.present heap k_ref1 \<and> Ref.present heap k_ref2
       \<and> Ref.present heap m_ref1 \<and> Ref.present heap m_ref2
       \<and> Array.present heap m1 \<and> Array.present heap m2
       \<and> m1 =!!= m2
   )"
-
-lemma inv_pair_P_D1: "P TYPE('v) (Ref.get heap m_ref1) heap" if "inv_pair heap"
-  using that unfolding inv_pair_def by (auto simp: Let_def)
-
-lemma inv_pair_P_D2: "P TYPE('v) (Ref.get heap m_ref2) heap" if "inv_pair heap"
-  using that unfolding inv_pair_def by (auto simp: Let_def)
 
 lemma inv_pair_lengthD1:
   "Array.length heap (Ref.get heap m_ref1) = size" if "inv_pair_weak heap"
@@ -181,18 +163,6 @@ lemma runState_state_of[simp]:
 
 context assumes injective: "\<forall> a b. to_index a = to_index b \<and> to_index b < size \<longrightarrow> a = b"
 begin
-
-interpretation m1: heap_correct
-  "P TYPE('v) (Ref.get heap m_ref1)"
-  "mem_update (Ref.get heap m_ref1)"
-  "mem_lookup (Ref.get heap m_ref1)"
-  by (rule mem_heap_correct[OF injective])
-
-interpretation m2: heap_correct
-  "P TYPE('v) (Ref.get heap m_ref2)"
-  "mem_update (Ref.get heap m_ref2)"
-  "mem_lookup (Ref.get heap m_ref2)"
-  by (rule mem_heap_correct[OF injective])
 
 context
   assumes disjoint[simp]:
@@ -490,224 +460,213 @@ interpretation pair: pair_mem lookup1 lookup2 update1 update2 move12 get_k1 get_
      done
    done
 
- thm pair.lookup_pair_def pair.update_pair_def
-
 lemma state_of_bind:
-  "(state_of m1 \<bind> (\<lambda> x. state_of (m2 x))) = state_of (m1 \<bind> (\<lambda> x. m2 x))"
-  
-
-lemma
-  "runState (pair.update_pair k v) heap = runState (state_of (update_pair k v)) heap"
-  unfolding pair.update_pair_def update_pair_def
-  unfolding get_k1_def update1_def get_k2_def update2_def lookup1_def lookup2_def move12_def
-  apply simp
-
-lemma
-  "pair.update_pair k v = state_of (update_pair k v)"
-  unfolding pair.update_pair_def update_pair_def state_of_def
-  
-
-lemma mem_correct_pair:
-  "heap_correct inv_pair update_pair lookup_pair"
-proof (standard, goal_cases)
-  case (1 k) -- "Lookup invariant"
-  show ?case
-    unfolding lookup_pair_def Let_def State_Heap.lift_p_def
-    apply (auto intro!: lift_pI split: option.split simp: execute_simps)
-    using m1.lookup_inv m2.lookup_inv
-              apply (auto 7 2 dest: inv_pair_P_D1 inv_pair_P_D2 elim: lift_p_None[rotated 2])
-    unfolding inv_pair_def using injective
-    by (auto simp: execute_simps P_def Memory_Heap.mem_lookup_def Let_def split: if_split_asm)
-next
-  case (2 k v) -- "Update invariant"
-  show ?case
-    unfolding update_pair_def Let_def State_Heap.lift_p_def mem_empty_def
-    apply (auto intro!: lift_pI split: option.split simp: execute_simps)
-                        apply (auto intro!: lift_pI split: option.split prod.split_asm simp: execute_simps bind_def; fail)
-    using m1.update_inv m2.update_inv
-                        apply (auto 7 2 dest: inv_pair_P_D1 inv_pair_P_D2 elim: lift_p_None[rotated 2])
-using m1.update_inv m2.update_inv
-               apply (auto 9 2 dest: inv_pair_P_D1 inv_pair_P_D2 elim: lift_p_None[rotated 2])
-unfolding inv_pair_def using injective
-       apply (auto simp: execute_simps P_def Memory_Heap.mem_update_def Let_def split: if_split_asm; fail)+
-      defer
-      defer
-  defer
-unfolding inv_pair_def using injective
-      apply (auto simp: execute_simps P_def Memory_Heap.mem_update_def Let_def split: if_split_asm; fail)+
-
-    oops
-                   apply (auto intro!: lift_pI split: option.split prod.split_asm simp: execute_simps bind_def; fail)
-                  apply (auto intro!: lift_pI split: option.split prod.split_asm simp: execute_simps bind_def; fail)
-                 apply (auto intro!: lift_pI split: option.split prod.split_asm simp: execute_simps bind_def; fail)
-                apply (auto intro!: lift_pI split: option.split prod.split_asm simp: execute_simps bind_def; fail)
-apply (auto intro!: lift_pI split: option.split prod.split_asm simp: execute_simps bind_def; fail)
-    oops
-    using m1.lookup_inv m2.lookup_inv
-              apply (auto 7 2 dest: inv_pair_P_D1 inv_pair_P_D2 elim: lift_p_None[rotated 2])
-    unfolding inv_pair_def using injective
-    by (auto simp: execute_simps P_def Memory_Heap.mem_lookup_def Let_def split: if_split_asm)
-  with update_inv[of k v] update_correct[OF P_empty, of k v] P_empty show ?case
-    unfolding update_pair_def Let_def
-    by (auto intro!: lift_pI split: pair_storage.split_asm if_split_asm prod.split_asm)
-       (auto dest: lift_p_P simp: inv_pair_def,
-         (force dest: lift_p_P dest!: update_correct[of _ k v] map_le_implies_dom_le)+
-       )
-next
-  case (3 m k)
-  {
-    fix m1 v1 m1' m2 v2 m2' k1 k2
-    assume assms:
-      "runState (lookup k) m1 = (v1, m1')" "runState (lookup k) m2 = (v2, m2')"
-      "inv_pair (Pair_Storage k1 k2 m1 m2)"
-    from assms have "P m1" "P m2"
-      by (auto intro: inv_pair_P_D1 inv_pair_P_D2)
-    have [intro]: "map_of m1' \<subseteq>\<^sub>m map_of m1" "map_of m2' \<subseteq>\<^sub>m map_of m2"
-      using lookup_correct[OF \<open>P m1\<close>, of k] lookup_correct[OF \<open>P m2\<close>, of k] assms by auto
-    from inv_pair_domD[OF assms(3)] have 1: "dom (map_of m1') \<inter> dom (map_of m2) = {}"
-      by (metis (no_types) \<open>map_of m1' \<subseteq>\<^sub>m map_of m1\<close> disjoint_iff_not_equal domIff map_le_def)
-    have inv1: "inv_pair (Pair_Storage (key k) k2 m1' m2)" if "k2 \<noteq> key k" "k1 = key k"
-      using that \<open>P m1\<close> \<open>P m2\<close> unfolding inv_pair_def
-      apply clarsimp
-      apply safe
-      subgoal for x' y
-        using assms(1,3) lookup_correct[OF \<open>P m1\<close>, of k, THEN map_le_implies_dom_le]
-        unfolding inv_pair_def by auto
-      subgoal for x' y
-        using assms(3) unfolding inv_pair_def by fastforce
-      using lookup_inv[of k] assms unfolding lift_p_def by force
-    have inv2: "inv_pair (Pair_Storage k1 (key k) m1 m2')" if "k2 = key k" "k1 \<noteq> key k"
-      using that \<open>P m1\<close> \<open>P m2\<close> unfolding inv_pair_def
-      apply clarsimp
-      apply safe
-      subgoal for x' y
-        using assms(3) unfolding inv_pair_def by fastforce
-      subgoal for x x' y
-        using assms(2,3) lookup_correct[OF \<open>P m2\<close>, of k, THEN map_le_implies_dom_le]
-        unfolding inv_pair_def by fastforce
-      using lookup_inv[of k] assms unfolding lift_p_def by force
-    have A:
-      "pair.map_of (Pair_Storage (key k) k2 m1' m2) \<subseteq>\<^sub>m pair.map_of (Pair_Storage (key k) k2 m1 m2)"
-      if "k2 \<noteq> key k" "k1 = key k"
-      using inv1 assms(3) 1
-      by (auto intro: map_add_mono map_le_refl simp: that map_of_eq_pair[symmetric])
-    have B:
-      "pair.map_of (Pair_Storage k1 (key k) m1 m2') \<subseteq>\<^sub>m pair.map_of (Pair_Storage k1 (key k) m1 m2)"
-      if "k2 = key k" "k1 \<noteq> key k"
-      using inv2 assms(3) that
-      by (auto intro: map_add_mono map_le_refl simp: map_of_eq_pair[symmetric] dest: inv_pair_domD)
-    note A B
-  }
-  with \<open>inv_pair m\<close> show ?case
-    by (auto split: pair_storage.split if_split prod.split simp: Let_def lookup_pair_def)
-next
-  case (4 m k v)
-  {
-    fix m1 v1 m1' m2 v2 m2' m3 k1 k2
-    assume assms:
-      "runState (update k v) m1 = ((), m1')" "runState (update k v) m2 = ((), m2')"
-      "runState (update k v) empty = ((), m3)"
-      "inv_pair (Pair_Storage k1 k2 m1 m2)"
-    from assms have "P m1" "P m2"
-      by (auto intro: inv_pair_P_D1 inv_pair_P_D2)
-    from assms(3) P_empty update_inv[of k v] have "P m3"
-      unfolding lift_p_def by auto
-    have [intro]: "map_of m1' \<subseteq>\<^sub>m map_of m1(k \<mapsto> v)" "map_of m2' \<subseteq>\<^sub>m map_of m2(k \<mapsto> v)"
-      using update_correct[OF \<open>P m1\<close>, of k v] update_correct[OF \<open>P m2\<close>, of k v] assms by auto
-    have "map_of m3 \<subseteq>\<^sub>m map_of empty(k \<mapsto> v)"
-      using assms(3) update_correct[OF P_empty, of k v] by auto
-    also have "\<dots> \<subseteq>\<^sub>m map_of m2(k \<mapsto> v)"
-      using empty_correct by (auto elim: map_le_trans intro!: map_le_upd)
-    finally have "map_of m3 \<subseteq>\<^sub>m map_of m2(k \<mapsto> v)" .
-    have 1: "dom (map_of m1) \<inter> dom (map_of m2(k \<mapsto> v)) = {}" if "k1 \<noteq> key k"
-      using assms(4) that by (force simp: inv_pair_def)
-    have 2: "dom (map_of m3) \<inter> dom (map_of m1) = {}" if "k1 \<noteq> key k"
-      using \<open>local.map_of m3 \<subseteq>\<^sub>m local.map_of empty(k \<mapsto> v)\<close> assms(4) that
-      by (fastforce dest!: map_le_implies_dom_le simp: inv_pair_def)
-    have inv: "inv_pair (Pair_Storage (key k) k1 m3 m1)" if "k2 \<noteq> key k" "k1 \<noteq> key k"
-      using that \<open>P m1\<close> \<open>P m2\<close> \<open>P m3\<close> unfolding inv_pair_def
-      apply clarsimp
-      apply safe
-      subgoal for x x' y
-        using assms(3) update_correct[OF P_empty, of k v, THEN map_le_implies_dom_le]
-          empty_correct
-        by (auto dest: map_le_implies_dom_le)
-      subgoal for x x' y
-        using assms(4) unfolding inv_pair_def by fastforce
-      done
-    have A:
-      "pair.map_of (Pair_Storage (key k) k1 m3 m1) \<subseteq>\<^sub>m pair.map_of (Pair_Storage k1 k2 m1 m2)(k \<mapsto> v)"
-      if "k2 \<noteq> key k" "k1 \<noteq> key k"
-      using inv assms(4) \<open>map_of m3 \<subseteq>\<^sub>m map_of m2(k \<mapsto> v)\<close> 1
-      apply (simp add: that map_of_eq_pair[symmetric])
-      apply (subst map_add_upd[symmetric], subst Map.map_add_comm, rule 2, rule that)
-      by (rule map_add_mono; auto)
-    have inv1: "inv_pair (Pair_Storage (key k) k2 m1' m2)" if "k2 \<noteq> key k" "k1 = key k"
-      using that \<open>P m1\<close> \<open>P m2\<close> unfolding inv_pair_def
-      apply clarsimp
-      apply safe
-      subgoal for x' y
-        using assms(1,4) update_correct[OF \<open>P m1\<close>, of k v, THEN map_le_implies_dom_le]
-        unfolding inv_pair_def by auto
-      subgoal for x' y
-        using assms(4) unfolding inv_pair_def by fastforce
-      using update_inv[of k v] assms unfolding lift_p_def by force
-    have inv2: "inv_pair (Pair_Storage k1 (key k) m1 m2')" if "k2 = key k" "k1 \<noteq> key k"
-      using that \<open>P m1\<close> \<open>P m2\<close> unfolding inv_pair_def
-      apply clarsimp
-      apply safe
-      subgoal for x' y
-        using assms(4) unfolding inv_pair_def by fastforce
-      subgoal for x x' y
-        using assms(2,4) update_correct[OF \<open>P m2\<close>, of k v, THEN map_le_implies_dom_le]
-        unfolding inv_pair_def by fastforce
-      using update_inv[of k v] assms unfolding lift_p_def by force
-    have C:
-      "pair.map_of (Pair_Storage (key k) k2 m1' m2) \<subseteq>\<^sub>m
-       pair.map_of (Pair_Storage (key k) k2 m1 m2)(k \<mapsto> v)"
-      if "k2 \<noteq> key k" "k1 = key k"
-      using inv1[OF that] assms(4) \<open>inv_pair m\<close>
-      by (simp add: that map_of_eq_pair[symmetric])
-         (subst map_add_upd2[symmetric]; force simp: inv_pair_def intro: map_add_mono map_le_refl)
-    have B:
-      "pair.map_of (Pair_Storage k1 (key k) m1 m2') \<subseteq>\<^sub>m
-       pair.map_of (Pair_Storage k1 (key k) m1 m2)(k \<mapsto> v)"
-      if "k2 = key k" "k1 \<noteq> key k"
-      using inv2[OF that] assms(4)
-      by (simp add: that map_of_eq_pair[symmetric])
-         (subst map_add_upd[symmetric]; rule map_add_mono; force simp: inv_pair_def)
-    note A B C
-  }
-  with \<open>inv_pair m\<close> show ?case
-    by (auto split: pair_storage.split if_split prod.split simp: Let_def update_pair_def)
+  "runState (state_of m1 \<bind> (\<lambda> x. state_of (m2 x))) heap = runState (state_of (m1 \<bind> (\<lambda> x. m2 x))) heap"
+  if "success m1 heap"
+  (* by (smt Heap_cases Monad.bind_def execute_bind(1) old.prod.case option.sel state.sel state_of_def success_def that) *)
+(* Generated by sledgehammer *)
+proof -
+obtain aa :: "heap \<Rightarrow> 'a Heap \<Rightarrow> 'a" and hh :: "heap \<Rightarrow> 'a Heap \<Rightarrow> heap" where
+  "\<forall>x0 x1. (\<exists>v2 v3. execute x1 x0 = Some (v2, v3)) = (execute x1 x0 = Some (aa x0 x1, hh x0 x1))"
+  by moura
+then have f1: "execute m1 heap = Some (aa heap m1, hh heap m1)"
+by (meson Heap_cases success_def that)
+  then have
+    "runState (state_of m1 \<bind> (\<lambda> x. state_of (m2 x))) heap =
+      (case (aa heap m1, hh heap m1) of (a, x) \<Rightarrow> runState (state_of (m2 a)) x)"
+    by (simp add: Monad.bind_def)
+  then show ?thesis
+    using f1 by (simp add: execute_bind(1))
 qed
 
-definition
-  "inv_pair heap = (
-    let
-      k1 = Ref.get heap k_ref1;
-      k2 = Ref.get heap k_ref2;
-      m1 = Ref.get heap m_ref1;
-      m2 = Ref.get heap m_ref2
-    in
-      key1 ` dom (heap_mem_defs.map_of_heap (mem_lookup m1) heap) \<subseteq> {k1} \<and>
-      key1 ` dom (heap_mem_defs.map_of_heap (mem_lookup m2) heap) \<subseteq> {k2} \<and>
-      k1 \<noteq> k2
-  )"
+interpretation heap_mem_defs inv_pair_weak lookup_pair update_pair .
 
 definition
-  "inv_pair = (!k_ref1 \<bind> (\<lambda> k1. !k_ref2 \<bind> (\<lambda> k2. !m_ref1 \<bind> (\<lambda> m1. !m_ref2 \<bind> (\<lambda> m2.
-    True
-    ))))
-  )"
+  "mem_lookup1 k = (!m_ref1 \<bind> (\<lambda>m2. mem_lookup m2 k))"
 
-end
+definition
+  "mem_lookup2 k = (!m_ref2 \<bind> (\<lambda>m2. mem_lookup m2 k))"
+
+definition "get_k1' \<equiv> !k_ref1"
+
+definition "get_k2' \<equiv> !k_ref2"
+
+definition "update1' k v \<equiv> !m_ref1 \<bind> (\<lambda> m. mem_update m k v)"
+
+definition "update2' k v \<equiv> !m_ref2 \<bind> (\<lambda> m. mem_update m k v)"
+
+definition "move12' k \<equiv>
+  Heap_Monad.bind (!k_ref1) (\<lambda> k1.
+    Heap_Monad.bind mem_empty (\<lambda> m. Heap_Monad.bind (!m_ref1) (\<lambda> m1.
+      k_ref2 := k1 \<then> k_ref1 := k \<then> m_ref2 := m1 \<then> m_ref1 := m)))"
+
+lemma rel_state_ofI:
+  "rel_state op = (state_of m) m" if
+  "\<forall> heap. inv_pair_weak heap \<longrightarrow> success m heap"
+  "lift_p inv_pair_weak m"
+  using that unfolding rel_state_def
+  by (auto split: option.split intro: lift_p_P'' simp: success_def)
+
+lemma lift_p_success:
+  "State_Heap.lift_p inv_pair_weak m"
+  if "DP_CRelVS.lift_p inv_pair_weak (state_of m)" "\<forall> heap. inv_pair_weak heap \<longrightarrow> success m heap"
+  using that
+  unfolding lift_p_def DP_CRelVS.lift_p_def
+  by (auto simp: success_def split: option.split)
+
+lemma rel_state_ofI2:
+  "rel_state op = (state_of m) m" if
+  "\<forall> heap. inv_pair_weak heap \<longrightarrow> success m heap"
+  "DP_CRelVS.lift_p inv_pair_weak (state_of m)"
+  using that by (blast intro: rel_state_ofI lift_p_success)
+
+lemma success_bind_I:
+  assumes "success f h"
+    and "\<And> x h'. execute f h = Some (x, h') \<Longrightarrow> success (g x) h'"
+  shows "success (f \<bind> g) h"
+  by (rule successE[OF assms(1)]) (auto elim: assms(2) intro: success_bind_executeI)
+
+context
+  includes lifting_syntax
+begin
+
+lemma [transfer_rule]:
+  "(op = ===> rel_state op =) move12 move12'"
+  unfolding move12_def move12'_def
+  apply (intro rel_funI)
+  apply simp
+  apply (rule rel_state_ofI2)
+  subgoal
+    by (auto
+        simp: mem_empty_def inv_pair_lengthD1 execute_simps Let_def
+        intro: success_intros intro!: success_bind_I
+       )
+  subgoal
+    using pair.move12_inv unfolding move12_def .
+  done
+
+lemma [transfer_rule]:
+  "(op = ===> rel_state (rel_option op =)) lookup1 mem_lookup1"
+  unfolding lookup1_def mem_lookup1_def
+  apply (intro rel_funI)
+  apply (simp add: option.rel_eq)
+  apply (rule rel_state_ofI2)
+  subgoal
+    by (auto 4 4
+        simp: mem_lookup_def inv_pair_lengthD1 execute_simps Let_def
+        intro: success_bind_executeI success_returnI Array.success_nthI
+       )
+  subgoal
+    using pair.lookup_inv(1) unfolding lookup1_def .
+  done
+
+lemma [transfer_rule]:
+  "(op = ===> rel_state (rel_option op =)) lookup2 mem_lookup2"
+  unfolding lookup2_def mem_lookup2_def
+  apply (intro rel_funI)
+  apply (simp add: option.rel_eq)
+  apply (rule rel_state_ofI2)
+  subgoal
+    by (auto 4 3
+        simp: mem_lookup_def inv_pair_lengthD2 execute_simps Let_def
+        intro: success_intros intro!: success_bind_I
+       )
+  subgoal
+    using pair.lookup_inv(2) unfolding lookup2_def .
+  done
+
+lemma [transfer_rule]:
+  "rel_state (op =) get_k1 get_k1'"
+  unfolding get_k1_def get_k1'_def
+  apply (rule rel_state_ofI2)
+  subgoal
+    by (auto intro: success_lookupI)
+  subgoal
+    unfolding get_k1_def[symmetric] by (auto dest: pair.get_state(1) intro: lift_pI)
+  done
+
+lemma [transfer_rule]:
+  "rel_state (op =) get_k2 get_k2'"
+  unfolding get_k2_def get_k2'_def
+  apply (rule rel_state_ofI2)
+  subgoal
+    by (auto intro: success_lookupI)
+  subgoal
+    unfolding get_k2_def[symmetric] by (auto dest: pair.get_state(2) intro: lift_pI)
+  done
+
+lemma [transfer_rule]:
+  "(op = ===> op = ===> rel_state (op =)) update1 update1'"
+  unfolding update1_def update1'_def
+  apply (intro rel_funI)
+  apply simp
+  apply (rule rel_state_ofI2)
+  subgoal
+    by (auto 4 3
+        simp: mem_update_def inv_pair_lengthD1 execute_simps Let_def
+        intro: success_intros intro!: success_bind_I
+       )
+  subgoal
+    using pair.update_inv(1) unfolding update1_def .
+  done
+
+lemma [transfer_rule]:
+  "(op = ===> op = ===> rel_state (op =)) update2 update2'"
+  unfolding update2_def update2'_def
+  apply (intro rel_funI)
+  apply simp
+  apply (rule rel_state_ofI2)
+  subgoal
+    by (auto 4 3
+        simp: mem_update_def inv_pair_lengthD2 execute_simps Let_def
+        intro: success_intros intro!: success_bind_I
+       )
+  subgoal
+    using pair.update_inv(2) unfolding update2_def .
+  done
+
+lemma [transfer_rule]:
+  "(op = ===> rel_state (rel_option op =)) lookup1 mem_lookup1"
+  unfolding lookup1_def mem_lookup1_def
+  apply (intro rel_funI)
+  apply (simp add: option.rel_eq)
+  apply (rule rel_state_ofI2)
+  subgoal
+    by (auto 4 3
+        simp: mem_lookup_def inv_pair_lengthD1 execute_simps Let_def
+        intro: success_intros intro!: success_bind_I
+       )
+  subgoal
+    using pair.lookup_inv(1) unfolding lookup1_def .
+  done
+
+lemma rel_state_lookup:
+  "(op = ===> rel_state op =) pair.lookup_pair lookup_pair"
+  unfolding pair.lookup_pair_def lookup_pair_def
+  unfolding
+    mem_lookup1_def[symmetric] mem_lookup2_def[symmetric]
+    get_k2_def[symmetric] get_k2'_def[symmetric]
+    get_k1_def[symmetric] get_k1'_def[symmetric]
+  by transfer_prover
+
+lemma rel_state_update:
+  "(op = ===> op = ===> rel_state op =) pair.update_pair update_pair"
+  unfolding pair.update_pair_def update_pair_def
+  unfolding move12'_def[symmetric]
+  unfolding
+    update1'_def[symmetric] update2'_def[symmetric]
+    get_k2_def[symmetric] get_k2'_def[symmetric]
+    get_k1_def[symmetric] get_k1'_def[symmetric]
+  by transfer_prover
+
+end (* Lifting Syntax *)
+
+end (* Disjoint *)
 
 end (* Injectivity *)
 
-locale heap_mem_empty_defs =
-  heap_mem_defs P lookup update for P and lookup and update :: "'k \<Rightarrow> 'v \<Rightarrow> unit Heap" +
-  fixes empty :: ""
-begin
+end (* Refs *)
+
+end (* Key functions & Size *)
 
 end (* Theory *)

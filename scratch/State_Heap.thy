@@ -81,21 +81,6 @@ definition checkmem_heap :: "'k \<Rightarrow> 'v Heap \<Rightarrow> 'v Heap" whe
 definition map_of_heap where
   "map_of_heap heap k = fst (the (execute (lookup k) heap))"
 
-end (* Heap Mem Defs *)
-
-locale heap_inv = heap_mem_defs _ lookup for lookup :: "'k \<Rightarrow> 'v option Heap"  +
-  assumes lookup_inv: "lift_p P (lookup k)"
-  assumes update_inv: "lift_p P (update k v)"
-begin
-
-lemma rel_state_lookup:
-  "rel_state (op =) (lookup' k) (lookup k)"
-  unfolding rel_state_def lookup'_def using lookup_inv[of k] by (auto intro: lift_p_P')
-
-lemma rel_state_update:
-  "rel_state (op =) (update' k v) (update k v)"
-  unfolding rel_state_def update'_def using update_inv[of k v] by (auto intro: lift_p_P')
-
 lemma rel_state_elim:
   assumes "rel_state R f g" "P heap"
   obtains heap' v v' where
@@ -124,14 +109,6 @@ context
   includes lifting_syntax
 begin
 
-lemma transfer_lookup:
-  "(op = ===> rel_state (op =)) lookup' lookup"
-  unfolding rel_fun_def by (auto intro: rel_state_lookup)
-
-lemma transfer_update:
-  "(op = ===> op = ===> rel_state (op =)) update' update"
-  unfolding rel_fun_def by (auto intro: rel_state_update)
-
 lemma transfer_bind[transfer_rule]:
   "(rel_state R ===> (R ===> rel_state Q) ===> rel_state Q) Monad.bind Heap_Monad.bind"
   unfolding rel_fun_def Monad.bind_def Heap_Monad.bind_def
@@ -150,6 +127,35 @@ lemma fun_app_lifted_transfer:
 lemma transfer_get[transfer_rule]:
   "rel_state op = Monad.get heap_get"
   unfolding Monad.get_def heap_get_def by (auto intro: rel_state_intro)
+
+end (* Lifting Syntax *)
+
+end (* Heap Mem Defs *)
+
+locale heap_inv = heap_mem_defs _ lookup for lookup :: "'k \<Rightarrow> 'v option Heap"  +
+  assumes lookup_inv: "lift_p P (lookup k)"
+  assumes update_inv: "lift_p P (update k v)"
+begin
+
+lemma rel_state_lookup:
+  "rel_state (op =) (lookup' k) (lookup k)"
+  unfolding rel_state_def lookup'_def using lookup_inv[of k] by (auto intro: lift_p_P')
+
+lemma rel_state_update:
+  "rel_state (op =) (update' k v) (update k v)"
+  unfolding rel_state_def update'_def using update_inv[of k v] by (auto intro: lift_p_P')
+
+context
+  includes lifting_syntax
+begin
+
+lemma transfer_lookup:
+  "(op = ===> rel_state (op =)) lookup' lookup"
+  unfolding rel_fun_def by (auto intro: rel_state_lookup)
+
+lemma transfer_update:
+  "(op = ===> op = ===> rel_state (op =)) update' update"
+  unfolding rel_fun_def by (auto intro: rel_state_update)
 
 lemma transfer_checkmem_heap:
   "(op = ===> rel_state op = ===> rel_state op =)
