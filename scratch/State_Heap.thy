@@ -218,8 +218,8 @@ lemma rel_fun_comp2:
   using assms rel_fun_comp by metis
 
 locale dp_heap =
-  dp_consistency lookup_st update_st P dp + heap_mem_defs P lookup update
-  for P :: "heap \<Rightarrow> bool" and dp :: "'k \<Rightarrow> 'v" and lookup :: "'k \<Rightarrow> 'v option Heap"
+  dp_consistency lookup_st update_st P dp + heap_mem_defs Q lookup update
+  for P Q :: "heap \<Rightarrow> bool" and dp :: "'k \<Rightarrow> 'v" and lookup :: "'k \<Rightarrow> 'v option Heap"
   and lookup_st update update_st +
   assumes
     rel_state_lookup: "rel_fun op = (rel_state op =) lookup_st lookup"
@@ -228,27 +228,27 @@ locale dp_heap =
 begin
 
 definition "crel_vs' R v f \<equiv>
-  \<forall>heap. P heap \<and> cmem heap \<longrightarrow>
-    (case execute f heap of None \<Rightarrow> False | Some (v', heap') \<Rightarrow> P heap' \<and> R v v' \<and> cmem heap')
+  \<forall>heap. P heap \<and> Q heap \<and> cmem heap \<longrightarrow>
+    (case execute f heap of
+      None \<Rightarrow> False |
+      Some (v', heap') \<Rightarrow> P heap' \<and> Q heap' \<and> R v v' \<and> cmem heap'
+    )
 "
 
 lemma crel_vs'_execute_None:
-  False if "crel_vs' R a b" "execute b heap = None" "P heap" "cmem heap"
+  False if "crel_vs' R a b" "execute b heap = None" "P heap" "Q heap" "cmem heap"
   using that unfolding crel_vs'_def by auto
 
 lemma crel_vs'_execute_Some:
-  assumes "crel_vs' R a b" "P heap" "cmem heap"
-  obtains x heap' where "execute b heap = Some (x, heap')" "P heap'"
+  assumes "crel_vs' R a b" "P heap" "Q heap" "cmem heap"
+  obtains x heap' where "execute b heap = Some (x, heap')" "P heap'" "Q heap'"
   using assms unfolding crel_vs'_def by (cases "execute b heap") auto
 
 lemma crel_vs'_executeD:
-  assumes "crel_vs' R a b" "P heap" "cmem heap"
-  obtains x heap' where "execute b heap = Some (x, heap')" "P heap'" "cmem heap'" "R a x"
+  assumes "crel_vs' R a b" "P heap" "Q heap" "cmem heap"
+  obtains x heap' where
+    "execute b heap = Some (x, heap')" "P heap'" "Q heap'" "cmem heap'" "R a x"
   using assms unfolding crel_vs'_def by (cases "execute b heap") auto
-
-lemma crel_vs_state_of:
-  "crel_vs R a (state_of b)" if "crel_vs' R a b"
-  unfolding crel_vs_def state_of_def by (auto elim: crel_vs'_executeD[OF that])
 
 lemma crel_vs'I: "crel_vs' R a b" if "(crel_vs R OO rel_state (op =)) a b"
   using that by (auto 4 3 elim: crel_vs_elim rel_state_elim simp: crel_vs'_def)
@@ -326,10 +326,10 @@ interpretation state: mem_correct lookup' update' P
 
 interpretation dp_consistency lookup' update' P dp ..
 
-lemma dp_heap: "dp_heap P lookup lookup' update update'"
+lemma dp_heap: "dp_heap P P lookup lookup' update update'"
   by (standard; rule transfer_lookup transfer_update)
 
-interpretation dp_heap: dp_heap P dp lookup lookup' update update'
+interpretation dp_heap: dp_heap P P dp lookup lookup' update update'
   by (rule dp_heap)
 
 definition "crel_vs1 R v f \<equiv>
