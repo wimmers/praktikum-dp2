@@ -31,6 +31,10 @@ lemma lift_p_P':
   "P heap'" if "the (execute f heap) = (v, heap')"
   using that lift_p_P by auto
 
+lemma lift_p_P'':
+  "P heap'" if "execute f heap = Some (v, heap')"
+  using that lift_p_P by auto
+
 lemma lift_p_the_Some[simp]:
   "execute f heap = Some (v, heap')" if "the (execute f heap) = (v, heap')"
   using that execute_cases by (auto split: option.split_asm)
