@@ -218,14 +218,14 @@ lemma rel_fun_comp2:
   using assms rel_fun_comp by metis
 
 locale dp_heap =
-  heap_correct  _ _ lookup for lookup :: "'k \<Rightarrow> 'v option Heap" +
-  fixes dp :: "'k \<Rightarrow> 'v"
+  dp_consistency lookup_st update_st P dp + heap_mem_defs P lookup update
+  for P :: "heap \<Rightarrow> bool" and dp :: "'k \<Rightarrow> 'v" and lookup :: "'k \<Rightarrow> 'v option Heap"
+  and lookup_st update update_st +
+  assumes
+    rel_state_lookup: "rel_fun op = (rel_state op =) lookup_st lookup"
+      and
+    rel_state_update: "rel_fun op = (rel_fun op = (rel_state op =)) update_st update"
 begin
-
-interpretation state: mem_correct lookup' update' P
-  by (rule mem_correct_heap)
-
-interpretation dp_consistency lookup' update' P dp ..
 
 definition "crel_vs' R v f \<equiv>
   \<forall>heap. P heap \<and> cmem heap \<longrightarrow>
@@ -277,12 +277,18 @@ lemma bind_transfer[transfer_rule]:
 
 lemma crel_vs'_update:
   "crel_vs' op = () (update param (dp param))"
-  by (rule crel_vs'I relcomppI crel_vs_update rel_state_update)+
+  by (rule
+      crel_vs'I relcomppI crel_vs_update
+      rel_state_update[unfolded rel_fun_def, rule_format] HOL.refl
+     )+
 
 lemma crel_vs'_lookup:
   "crel_vs'
     (\<lambda> v v'. case v' of None \<Rightarrow> True | Some v' \<Rightarrow> v = v' \<and> v = dp param) (dp param) (lookup param)"
-  by (rule crel_vs'I relcomppI crel_vs_lookup rel_state_lookup)+
+  by (rule
+      crel_vs'I relcomppI crel_vs_lookup
+      rel_state_lookup[unfolded rel_fun_def, rule_format] HOL.refl
+     )+
 
 lemma crel_vs'_eq_eq_onp:
   "crel_vs' (eq_onp (\<lambda> x. x = v)) v s" if "crel_vs' op = v s"
@@ -319,6 +325,12 @@ interpretation state: mem_correct lookup' update' P
   by (rule mem_correct_heap)
 
 interpretation dp_consistency lookup' update' P dp ..
+
+lemma dp_heap: "dp_heap P lookup lookup' update update'"
+  by (standard; rule transfer_lookup transfer_update)
+
+interpretation dp_heap: dp_heap P dp lookup lookup' update update'
+  by (rule dp_heap)
 
 definition "crel_vs1 R v f \<equiv>
   \<forall>heap. P heap \<longrightarrow>
