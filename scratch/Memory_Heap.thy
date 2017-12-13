@@ -55,6 +55,205 @@ end (* Injectivity *)
 
 end (* Fixed array *)
 
+definition
+  "alloc_refs \<equiv> fold (\<lambda> x m. m \<bind> (\<lambda> xs. ref x \<bind> (\<lambda> y. return (x # xs))))"
+
+lemma execute_bind_success':
+  assumes "success f h" "execute (f \<bind> g) h = Some (y, h'')"
+  obtains x h' where "execute f h = Some (x, h')" "execute (g x) h' = Some (y, h'')"
+  using assms by (auto simp: execute_simps elim: successE)
+
+lemma success_bind_I:
+  assumes "success f h"
+    and "\<And> x h'. execute f h = Some (x, h') \<Longrightarrow> success (g x) h'"
+  shows "success (f \<bind> g) h"
+  by (rule successE[OF assms(1)]) (auto elim: assms(2) intro: success_bind_executeI)
+
+definition
+  "alloc_pair a b \<equiv> ref a \<bind> (\<lambda> r1. ref b \<bind> (\<lambda> r2. return (r1, r2)))"
+
+lemma alloc_pair_alloc:
+  "Ref.get heap' r1 = a" "Ref.get heap' r2 = b"
+  if "execute (alloc_pair a b) heap = Some ((r1, r2), heap')"
+  using that unfolding alloc_pair_def
+  by (auto simp: execute_simps elim!: execute_bind_success'[OF success_refI])
+     (metis Ref.get_alloc fst_conv get_alloc_neq next_present present_alloc_neq snd_conv)+
+
+lemma alloc_pairD1:
+  "r =!= r1 \<and> r =!= r2 \<and> Ref.present heap' r"
+  if "execute (alloc_pair a b) heap = Some ((r1, r2), heap')" "Ref.present heap r"
+  using that unfolding alloc_pair_def
+  by (auto simp: execute_simps elim!: execute_bind_success'[OF success_refI])
+     (metis next_fresh noteq_I Ref.present_alloc snd_conv)+
+
+lemma alloc_pairD2:
+  "r1 =!= r2 \<and> Ref.present heap' r2 \<and> Ref.present heap' r1"
+  if "execute (alloc_pair a b) heap = Some ((r1, r2), heap')"
+  using that unfolding alloc_pair_def
+  by (auto simp: execute_simps elim!: execute_bind_success'[OF success_refI])
+     (metis next_fresh next_present noteq_I Ref.present_alloc snd_conv)+
+
+lemma alloc_pairD3:
+  "Array.present heap' r"
+  if "execute (alloc_pair a b) heap = Some ((r1, r2), heap')" "Array.present heap r"
+  using that unfolding alloc_pair_def
+  by (auto simp: execute_simps elim!: execute_bind_success'[OF success_refI])
+     (metis array_present_alloc snd_conv)
+
+lemma alloc_pairD4:
+  "Ref.get heap' r = x"
+  if "execute (alloc_pair a b) heap = Some ((r1, r2), heap')"
+     "Ref.get heap r = x" "Ref.present heap r"
+  using that unfolding alloc_pair_def
+  by (auto simp: execute_simps elim!: execute_bind_success'[OF success_refI])
+     (metis Ref.not_present_alloc Ref.present_alloc get_alloc_neq noteq_I snd_conv)
+
+lemma succes_alloc_pair[intro]:
+  "success (alloc_pair a b) heap"
+  unfolding alloc_pair_def by (auto intro: success_intros success_bind_I)
+
+definition
+  "init_state_inner k1 k2 m1 m2 \<equiv>
+    alloc_pair k1 k2 \<bind> (\<lambda> (k_ref1, k_ref2).
+      alloc_pair m1 m2 \<bind> (\<lambda> (m_ref1, m_ref2).
+        return (k_ref1, k_ref2, m_ref1, m_ref2)))
+  "
+
+lemma init_state_inner_alloc:
+  assumes
+    "execute (init_state_inner k1 k2 m1 m2) heap = Some ((k_ref1, k_ref2, m_ref1, m_ref2), heap')"
+  shows
+    "Ref.get heap' k_ref1 = k1" "Ref.get heap' k_ref2 = k2"
+    "Ref.get heap' m_ref1 = m1" "Ref.get heap' m_ref2 = m2"
+  using assms unfolding init_state_inner_def
+  by (auto simp: execute_simps elim!: execute_bind_success'[OF succes_alloc_pair])
+     (auto intro: alloc_pair_alloc dest: alloc_pairD2 elim: alloc_pairD4)
+
+lemma init_state_inner_distinct:
+  assumes
+    "execute (init_state_inner k1 k2 m1 m2) heap = Some ((k_ref1, k_ref2, m_ref1, m_ref2), heap')"
+  shows
+    "m_ref1 =!= m_ref2 \<and> m_ref1 =!= k_ref1 \<and> m_ref1 =!= k_ref2 \<and> m_ref2 =!= k_ref1
+   \<and> m_ref2 =!= k_ref2 \<and> k_ref1 =!= k_ref2"
+  using assms unfolding init_state_inner_def
+  by (auto simp: execute_simps elim!: execute_bind_success'[OF succes_alloc_pair])
+     (blast dest: alloc_pairD1 alloc_pairD2 intro: noteq_sym)+
+
+lemma init_state_inner_present:
+  assumes
+    "execute (init_state_inner k1 k2 m1 m2) heap = Some ((k_ref1, k_ref2, m_ref1, m_ref2), heap')"
+  shows
+    "Ref.present heap' k_ref1" "Ref.present heap' k_ref2"
+    "Ref.present heap' m_ref1" "Ref.present heap' m_ref2"
+  using assms unfolding init_state_inner_def
+  by (auto simp: execute_simps elim!: execute_bind_success'[OF succes_alloc_pair])
+     (blast dest: alloc_pairD1 alloc_pairD2)+
+
+lemma inite_state_inner_present':
+  assumes
+    "execute (init_state_inner k1 k2 m1 m2) heap = Some ((k_ref1, k_ref2, m_ref1, m_ref2), heap')"
+    "Array.present heap a"
+  shows
+    "Array.present heap' a"
+    using assms unfolding init_state_inner_def
+    by (auto simp: execute_simps elim!: execute_bind_success'[OF succes_alloc_pair] alloc_pairD3)
+
+lemma succes_init_state_inner[intro]:
+  "success (init_state_inner k1 k2 m1 m2) heap"
+  unfolding init_state_inner_def by (auto 4 3 intro: success_intros success_bind_I)
+
+definition
+  "init_state k1 k2 \<equiv>
+    mem_empty \<bind> (\<lambda> m1. mem_empty \<bind> (\<lambda> m2. init_state_inner k1 k2 m1 m2))"
+
+lemma success_empty[intro]:
+  "success mem_empty heap"
+  unfolding mem_empty_def by (auto intro: success_intros)
+
+lemma succes_init_state[intro]:
+  "success (init_state k1 k2) heap"
+  unfolding init_state_def by (auto intro: success_intros success_bind_I)
+
+lemma init_state_distinct:
+  assumes
+    "execute (init_state k1 k2) heap = Some ((k_ref1, k_ref2, m_ref1, m_ref2), heap')"
+  shows
+    "m_ref1 =!= m_ref2 \<and> m_ref1 =!= k_ref1 \<and> m_ref1 =!= k_ref2 \<and> m_ref2 =!= k_ref1
+   \<and> m_ref2 =!= k_ref2 \<and> k_ref1 =!= k_ref2"
+  using assms unfolding init_state_def
+  by (elim execute_bind_success'[OF success_empty] init_state_inner_distinct)
+
+lemma init_state_present:
+  assumes
+    "execute (init_state k1 k2) heap = Some ((k_ref1, k_ref2, m_ref1, m_ref2), heap')"
+  shows
+    "Ref.present heap' k_ref1" "Ref.present heap' k_ref2"
+    "Ref.present heap' m_ref1" "Ref.present heap' m_ref2"
+  using assms unfolding init_state_def
+  by (auto
+        simp: execute_simps elim!: execute_bind_success'[OF success_empty]
+        dest: init_state_inner_present
+     )
+
+lemma empty_present:
+  "Array.present h' x" if "execute mem_empty heap = Some (x, h')"
+  using that unfolding mem_empty_def
+  by (auto simp: execute_simps) (metis Array.present_alloc fst_conv snd_conv)
+
+lemma empty_present':
+  "Array.present h' a" if "execute mem_empty heap = Some (x, h')" "Array.present heap a"
+  using that unfolding mem_empty_def
+  by (auto simp: execute_simps Array.present_def Array.alloc_def Array.set_def Let_def)
+
+lemma init_state_present2:
+  assumes
+    "execute (init_state k1 k2) heap = Some ((k_ref1, k_ref2, m_ref1, m_ref2), heap')"
+  shows
+    "Array.present heap' (Ref.get heap' m_ref1)" "Array.present heap' (Ref.get heap' m_ref2)"
+  using assms unfolding init_state_def
+  by (auto 4 3
+        simp: execute_simps init_state_inner_alloc elim!: execute_bind_success'[OF success_empty]
+        dest: inite_state_inner_present' empty_present empty_present'
+     )
+
+lemma init_state_neq:
+  assumes
+    "execute (init_state k1 k2) heap = Some ((k_ref1, k_ref2, m_ref1, m_ref2), heap')"
+  shows
+    "Ref.get heap' m_ref1 =!!= Ref.get heap' m_ref2"
+  using assms unfolding init_state_def
+  by (auto 4 3
+        simp: execute_simps init_state_inner_alloc elim!: execute_bind_success'[OF success_empty]
+        dest: inite_state_inner_present' empty_present empty_present'
+     )
+    (metis empty_present execute_new fst_conv mem_empty_def option.inject present_alloc_noteq)
+
+lemma present_alloc_get:
+  "Array.get heap' a = Array.get heap a"
+  if "Array.alloc xs heap = (a', heap')" "Array.present heap a"
+  using that by (auto simp: Array.alloc_def Array.present_def Array.get_def Let_def Array.set_def)
+
+lemma init_state_length:
+  assumes
+    "execute (init_state k1 k2) heap = Some ((k_ref1, k_ref2, m_ref1, m_ref2), heap')"
+  shows
+    "Array.length heap' (Ref.get heap' m_ref1) = size"
+    "Array.length heap' (Ref.get heap' m_ref2) = size"
+  using assms unfolding init_state_def
+  apply (auto
+        simp: execute_simps init_state_inner_alloc elim!: execute_bind_success'[OF success_empty]
+        dest: inite_state_inner_present' empty_present empty_present'
+     )
+   apply (auto
+      simp: execute_simps init_state_inner_def alloc_pair_def mem_empty_def Array.length_def
+      elim!: execute_bind_success'[OF success_refI]
+     )
+  apply (metis
+      Array.alloc_def Array.get_set_eq Array.present_alloc array_get_alloc fst_conv length_replicate
+      present_alloc_get snd_conv
+     )+
+  done
+
 context
   fixes key1 :: "'k \<Rightarrow> ('k1 :: heap)" and key2 :: "'k \<Rightarrow> 'k2"
     and m_ref1 m_ref2 :: "('v :: heap) option array ref"
@@ -520,12 +719,6 @@ lemma rel_state_ofI2:
   "DP_CRelVS.lift_p inv_pair_weak (state_of m)"
   using that by (blast intro: rel_state_ofI lift_p_success)
 
-lemma success_bind_I:
-  assumes "success f h"
-    and "\<And> x h'. execute f h = Some (x, h') \<Longrightarrow> success (g x) h'"
-  shows "success (f \<bind> g) h"
-  by (rule successE[OF assms(1)]) (auto elim: assms(2) intro: success_bind_executeI)
-
 context
   includes lifting_syntax
 begin
@@ -666,6 +859,16 @@ end (* Disjoint *)
 end (* Injectivity *)
 
 end (* Refs *)
+
+lemma init_state_inv:
+  assumes
+    "execute (init_state k1 k2) heap = Some ((k_ref1, k_ref2, m_ref1, m_ref2), heap')"
+  shows "inv_pair_weak TYPE('c::heap) TYPE('d::heap) m_ref1 m_ref2 k_ref1 k_ref2 heap'"
+  using assms unfolding inv_pair_weak_def Let_def
+  by (auto intro:
+      init_state_present init_state_present2 init_state_neq init_state_length
+      init_state_distinct
+     )
 
 end (* Key functions & Size *)
 
