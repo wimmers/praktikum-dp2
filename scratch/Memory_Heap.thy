@@ -2,7 +2,16 @@ theory Memory_Heap
   imports State_Heap Memory
 begin
 
-instance array :: (heap) heap ..
+no_notation Monad.bind (infixl "\<bind>" 54)
+no_notation Monad.then_monad (infixl "\<then>" 54)
+
+no_syntax
+  "_do_block" :: "do_binds \<Rightarrow> 'a" ("do {//(2  _)//}" [12] 62)
+  "_do_bind"  :: "[pttrn, 'a] \<Rightarrow> do_bind" ("(2_ \<leftarrow>/ _)" 13)
+  "_do_let" :: "[pttrn, 'a] \<Rightarrow> do_bind" ("(2let _ =/ _)" [1000, 13] 13)
+  "_do_then" :: "'a \<Rightarrow> do_bind" ("_" [14] 13)
+  "_do_final" :: "'a \<Rightarrow> do_binds" ("_")
+  "_do_cons" :: "[do_bind, do_binds] \<Rightarrow> do_binds" ("_;//_" [13, 12] 12)
 
 context
   fixes size :: nat
@@ -55,9 +64,6 @@ end (* Injectivity *)
 
 end (* Fixed array *)
 
-definition
-  "alloc_refs \<equiv> fold (\<lambda> x m. m \<bind> (\<lambda> xs. ref x \<bind> (\<lambda> y. return (x # xs))))"
-
 lemma execute_bind_success':
   assumes "success f h" "execute (f \<bind> g) h = Some (y, h'')"
   obtains x h' where "execute f h = Some (x, h')" "execute (g x) h' = Some (y, h'')"
@@ -70,7 +76,11 @@ lemma success_bind_I:
   by (rule successE[OF assms(1)]) (auto elim: assms(2) intro: success_bind_executeI)
 
 definition
-  "alloc_pair a b \<equiv> ref a \<bind> (\<lambda> r1. ref b \<bind> (\<lambda> r2. return (r1, r2)))"
+  "alloc_pair a b \<equiv> do {
+    r1 \<leftarrow> ref a;
+    r2 \<leftarrow> ref b;
+    return (r1, r2)
+  }"
 
 lemma alloc_pair_alloc:
   "Ref.get heap' r1 = a" "Ref.get heap' r2 = b"
@@ -113,10 +123,11 @@ lemma succes_alloc_pair[intro]:
   unfolding alloc_pair_def by (auto intro: success_intros success_bind_I)
 
 definition
-  "init_state_inner k1 k2 m1 m2 \<equiv>
-    alloc_pair k1 k2 \<bind> (\<lambda> (k_ref1, k_ref2).
-      alloc_pair m1 m2 \<bind> (\<lambda> (m_ref1, m_ref2).
-        return (k_ref1, k_ref2, m_ref1, m_ref2)))
+  "init_state_inner k1 k2 m1 m2 \<equiv>  do {
+    (k_ref1, k_ref2) \<leftarrow> alloc_pair k1 k2;
+    (m_ref1, m_ref2) \<leftarrow> alloc_pair m1 m2;
+    return (k_ref1, k_ref2, m_ref1, m_ref2)
+  }
   "
 
 lemma init_state_inner_alloc:
@@ -163,8 +174,11 @@ lemma succes_init_state_inner[intro]:
   unfolding init_state_inner_def by (auto 4 3 intro: success_intros success_bind_I)
 
 definition
-  "init_state k1 k2 \<equiv>
-    mem_empty \<bind> (\<lambda> m1. mem_empty \<bind> (\<lambda> m2. init_state_inner k1 k2 m1 m2))"
+  "init_state k1 k2 \<equiv> do {
+    m1 \<leftarrow> mem_empty;
+    m2 \<leftarrow> mem_empty;
+    init_state_inner k1 k2 m1 m2
+  }"
 
 lemma success_empty[intro]:
   "success mem_empty heap"
@@ -262,46 +276,59 @@ begin
 
 text \<open>We assume that look-ups happen on the older row, so this is biased towards the second entry.\<close>
 definition
-  "lookup_pair k = (
-    let k' = key1 k in
-      (
-      !k_ref2 \<bind> (\<lambda> k2.
-      if k' = k2 then
-        !m_ref2 \<bind> (\<lambda> m2. mem_lookup m2 (key2 k))
+  "lookup_pair k = do {
+    let k' = key1 k;
+    k2 \<leftarrow> !k_ref2;
+    if k' = k2 then
+      do {
+        m2 \<leftarrow> !m_ref2;
+        mem_lookup m2 (key2 k)
+      }
+    else
+      do {
+      k1 \<leftarrow> !k_ref1;
+      if k' = k1 then
+        do {
+          m1 \<leftarrow> !m_ref1;
+          mem_lookup m1 (key2 k)
+        }
       else
-        !k_ref1 \<bind> (\<lambda> k1.
-        if k' = k1 then
-          !m_ref1 \<bind> (\<lambda> m1. mem_lookup m1 (key2 k))
-        else
-          return None))
-      )
-      )
+        return None
+    }
+  }
    "
 
 text \<open>We assume that updates happen on the newer row, so this is biased towards the first entry.\<close>
 definition
-  "update_pair k v = (
-    let k' = key1 k in
-      (
-      Heap_Monad.bind (!k_ref1) (\<lambda> k1.
-      if k' = k1 then
-        Heap_Monad.bind (!m_ref1) (\<lambda> m. mem_update m (key2 k) v)
-      else
-        Heap_Monad.bind (!k_ref2) (\<lambda> k2.
-        if k' = k2 then
-          Heap_Monad.bind (!m_ref2) (\<lambda> m. mem_update m (key2 k) v)
-        else
-          Heap_Monad.bind (!k_ref1) (\<lambda> k1.
-            Heap_Monad.bind mem_empty (\<lambda> m.
-              Heap_Monad.bind (!m_ref1) (\<lambda> m1.
-                k_ref2 := k1 \<then> k_ref1 := k' \<then> m_ref2 := m1 \<then> m_ref1 := m
-              )
-            )
-          ) \<then> Heap_Monad.bind (!m_ref1) (\<lambda> m. mem_update m (key2 k) v)
-        )
-      )
-    )
-   )
+  "update_pair k v = do {
+    let k' = key1 k;
+      k1 \<leftarrow> !k_ref1;
+      if k' = k1 then do {
+        m \<leftarrow> !m_ref1;
+        mem_update m (key2 k) v
+      }
+      else do {
+        k2 \<leftarrow> !k_ref2;
+        if k' = k2 then do {
+          m \<leftarrow> !m_ref2;
+          mem_update m (key2 k) v
+        }
+        else do {
+          do {
+            k1 \<leftarrow> !k_ref1;
+            m \<leftarrow> mem_empty;
+            m1 \<leftarrow> !m_ref1;
+            k_ref2 := k1;
+            k_ref1 := k';
+            m_ref2 := m1;
+            m_ref1 := m
+          }
+        ;
+        m \<leftarrow> !m_ref1;
+        mem_update m (key2 k) v
+      }
+    }
+   }
    "
 
 definition
@@ -339,18 +366,24 @@ lemma inv_pair_not_eqD:
   "Ref.get heap m_ref1 =!!= Ref.get heap m_ref2" if "inv_pair_weak heap"
   using that unfolding inv_pair_weak_def by (auto simp: Let_def)
 
-definition "lookup1 k \<equiv> state_of (!m_ref1 \<bind> (\<lambda> m. mem_lookup m k))"
+definition "lookup1 k \<equiv> state_of (do {m \<leftarrow> !m_ref1; mem_lookup m k})"
 
-definition "lookup2 k \<equiv> state_of (!m_ref2 \<bind> (\<lambda> m. mem_lookup m k))"
+definition "lookup2 k \<equiv> state_of (do {m \<leftarrow> !m_ref2; mem_lookup m k})"
 
-definition "update1 k v \<equiv> state_of (!m_ref1 \<bind> (\<lambda> m. mem_update m k v))"
+definition "update1 k v \<equiv> state_of (do {m \<leftarrow> !m_ref1; mem_update m k v})"
 
-definition "update2 k v \<equiv> state_of (!m_ref2 \<bind> (\<lambda> m. mem_update m k v))"
+definition "update2 k v \<equiv> state_of (do {m \<leftarrow> !m_ref2; mem_update m k v})"
 
-definition "move12 k \<equiv>
-  state_of (Heap_Monad.bind (!k_ref1) (\<lambda> k1.
-    Heap_Monad.bind mem_empty (\<lambda> m. Heap_Monad.bind (!m_ref1) (\<lambda> m1.
-      k_ref2 := k1 \<then> k_ref1 := k \<then> m_ref2 := m1 \<then> m_ref1 := m))))"
+definition "move12 k \<equiv> state_of (do {
+    k1 \<leftarrow> !k_ref1;
+    m \<leftarrow> mem_empty;
+    m1 \<leftarrow> !m_ref1;
+    k_ref2 := k1;
+    k_ref1 := k;
+    m_ref2 := m1;
+    m_ref1 := m
+  })
+  "
 
 definition "get_k1 \<equiv> state_of (!k_ref1)"
 
@@ -659,45 +692,31 @@ interpretation pair: pair_mem lookup1 lookup2 update1 update2 move12 get_k1 get_
      done
    done
 
-lemma state_of_bind:
-  "runState (state_of m1 \<bind> (\<lambda> x. state_of (m2 x))) heap = runState (state_of (m1 \<bind> (\<lambda> x. m2 x))) heap"
-  if "success m1 heap"
-  (* by (smt Heap_cases Monad.bind_def execute_bind(1) old.prod.case option.sel state.sel state_of_def success_def that) *)
-(* Generated by sledgehammer *)
-proof -
-obtain aa :: "heap \<Rightarrow> 'a Heap \<Rightarrow> 'a" and hh :: "heap \<Rightarrow> 'a Heap \<Rightarrow> heap" where
-  "\<forall>x0 x1. (\<exists>v2 v3. execute x1 x0 = Some (v2, v3)) = (execute x1 x0 = Some (aa x0 x1, hh x0 x1))"
-  by moura
-then have f1: "execute m1 heap = Some (aa heap m1, hh heap m1)"
-by (meson Heap_cases success_def that)
-  then have
-    "runState (state_of m1 \<bind> (\<lambda> x. state_of (m2 x))) heap =
-      (case (aa heap m1, hh heap m1) of (a, x) \<Rightarrow> runState (state_of (m2 a)) x)"
-    by (simp add: Monad.bind_def)
-  then show ?thesis
-    using f1 by (simp add: execute_bind(1))
-qed
-
 interpretation heap_mem_defs inv_pair_weak lookup_pair update_pair .
 
 definition
-  "mem_lookup1 k = (!m_ref1 \<bind> (\<lambda>m2. mem_lookup m2 k))"
+  "mem_lookup1 k = do {m \<leftarrow> !m_ref1; mem_lookup m k}"
 
 definition
-  "mem_lookup2 k = (!m_ref2 \<bind> (\<lambda>m2. mem_lookup m2 k))"
+  "mem_lookup2 k = do {m \<leftarrow> !m_ref2; mem_lookup m k}"
 
 definition "get_k1' \<equiv> !k_ref1"
 
 definition "get_k2' \<equiv> !k_ref2"
 
-definition "update1' k v \<equiv> !m_ref1 \<bind> (\<lambda> m. mem_update m k v)"
+definition "update1' k v \<equiv> do {m \<leftarrow> !m_ref1; mem_update m k v}"
 
-definition "update2' k v \<equiv> !m_ref2 \<bind> (\<lambda> m. mem_update m k v)"
+definition "update2' k v \<equiv> do {m \<leftarrow> !m_ref2; mem_update m k v}"
 
-definition "move12' k \<equiv>
-  Heap_Monad.bind (!k_ref1) (\<lambda> k1.
-    Heap_Monad.bind mem_empty (\<lambda> m. Heap_Monad.bind (!m_ref1) (\<lambda> m1.
-      k_ref2 := k1 \<then> k_ref1 := k \<then> m_ref2 := m1 \<then> m_ref1 := m)))"
+definition "move12' k \<equiv> do {
+    k1 \<leftarrow> !k_ref1;
+    m \<leftarrow> mem_empty;
+    m1 \<leftarrow> !m_ref1;
+    k_ref2 := k1;
+    k_ref1 := k;
+    m_ref2 := m1;
+    m_ref1 := m
+  }"
 
 lemma rel_state_ofI:
   "rel_state op = (state_of m) m" if
