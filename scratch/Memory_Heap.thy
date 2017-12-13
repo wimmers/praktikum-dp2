@@ -435,260 +435,115 @@ lemma length_get_upd[simp]:
 
 interpretation pair: pair_mem lookup1 lookup2 update1 update2 move12 get_k1 get_k2 inv_pair_weak
   apply standard
-  subgoal
-    by (simp add: execute_simps get_k1_def)
-  subgoal
-    by (simp add: execute_simps get_k2_def)
-  subgoal
-    by (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def lookup1_def mem_lookup_def
+  supply [simp] =
+      mem_empty_def mem_defs.map_of_def map_le_def
+      move12_def update1_def update2_def lookup1_def lookup2_def get_k1_def get_k2_def
+      mem_update_def mem_lookup_def
       execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-    )
+      inv_pair_presentD inv_pair_presentD2
+      Memory_Heap.lookup1_def Memory_Heap.lookup2_def Memory_Heap.mem_lookup_def
+  subgoal
+    by simp
+  subgoal
+    by simp
+  subgoal
+    by auto
   subgoal for m k1 x m'
-    apply (frule inv_pair_lengthD1)
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def lookup1_def lookup2_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2
-    )
+    apply (frule inv_pair_lengthD1, frule inv_pair_lengthD2, frule inv_pair_not_eqD, auto)
     done
   subgoal
-    by (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def lookup1_def lookup2_def get_k1_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2
-    )
+    by auto
   subgoal
-    by (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def lookup1_def lookup2_def get_k1_def get_k2_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2
-    )
+    by auto
   subgoal
     apply (rule lift_pI)
-    unfolding inv_pair_weak_def Memory_Heap.P_def
+    unfolding inv_pair_weak_def
     apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def lookup1_def lookup2_def get_k1_def get_k2_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
       intro: alloc_present alloc_present'
       elim: present_alloc_noteq[THEN Array.noteq_sym]
     )
     done
   subgoal
-    apply (rule lift_pI)
-    unfolding inv_pair_weak_def Memory_Heap.P_def
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def lookup1_def lookup2_def get_k1_def get_k2_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (rule lift_pI, unfold inv_pair_weak_def, auto split: if_split_asm)
     done
   subgoal
-    apply (rule lift_pI)
-    unfolding inv_pair_weak_def Memory_Heap.P_def
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def lookup1_def lookup2_def get_k1_def get_k2_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (rule lift_pI, unfold inv_pair_weak_def, auto split: if_split_asm)
     done
   subgoal
-    apply (rule lift_pI)
-    unfolding inv_pair_weak_def Memory_Heap.P_def
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def lookup1_def lookup2_def get_k1_def get_k2_def mem_update_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (rule lift_pI, unfold inv_pair_weak_def, auto split: if_split_asm)
     done
   subgoal
-    apply (rule lift_pI)
-    unfolding inv_pair_weak_def Memory_Heap.P_def
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def update2_def lookup1_def lookup2_def get_k1_def get_k2_def mem_update_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (rule lift_pI, unfold inv_pair_weak_def, auto split: if_split_asm)
     done
   subgoal
-    apply (frule inv_pair_lengthD1)
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def update2_def lookup1_def lookup2_def get_k1_def get_k2_def mem_update_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (frule inv_pair_lengthD1, frule inv_pair_lengthD2, frule inv_pair_not_eqD,
+           auto split: if_split_asm
+          )
     done
   subgoal
-    apply (frule inv_pair_lengthD1)
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def update2_def lookup1_def lookup2_def get_k1_def get_k2_def mem_update_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (frule inv_pair_lengthD1, frule inv_pair_lengthD2, frule inv_pair_not_eqD,
+           auto split: if_split_asm
+          )
     done
   subgoal
-    apply (frule inv_pair_lengthD2)
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def update2_def lookup1_def lookup2_def get_k1_def get_k2_def mem_update_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (frule inv_pair_lengthD1, frule inv_pair_lengthD2, frule inv_pair_not_eqD,
+           auto split: if_split_asm
+          )
     done
    subgoal
-    apply (frule inv_pair_lengthD2)
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def update2_def lookup1_def lookup2_def get_k1_def get_k2_def mem_update_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (frule inv_pair_lengthD1, frule inv_pair_lengthD2, frule inv_pair_not_eqD,
+           auto split: if_split_asm
+          )
      done
    subgoal
-    apply (frule inv_pair_lengthD1)
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def update2_def lookup1_def lookup2_def get_k1_def get_k2_def mem_update_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (frule inv_pair_lengthD1, frule inv_pair_lengthD2, frule inv_pair_not_eqD,
+           auto split: if_split_asm
+          )
      done
   subgoal
-    apply (frule inv_pair_lengthD1)
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def update2_def lookup1_def lookup2_def get_k1_def get_k2_def mem_update_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (frule inv_pair_lengthD1, frule inv_pair_lengthD2, frule inv_pair_not_eqD,
+           auto split: if_split_asm
+          )
     done
   subgoal
-    apply (frule inv_pair_lengthD2)
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def update2_def lookup1_def lookup2_def get_k1_def get_k2_def mem_update_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (frule inv_pair_lengthD1, frule inv_pair_lengthD2, frule inv_pair_not_eqD,
+           auto split: if_split_asm
+          )
     done
   subgoal
-    apply (frule inv_pair_lengthD2)
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def update2_def lookup1_def lookup2_def get_k1_def get_k2_def mem_update_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (frule inv_pair_lengthD1, frule inv_pair_lengthD2, frule inv_pair_not_eqD,
+           auto split: if_split_asm
+          )
     done
   subgoal
-    apply (frule inv_pair_lengthD1)
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def update2_def lookup1_def lookup2_def get_k1_def get_k2_def mem_update_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (frule inv_pair_lengthD1, frule inv_pair_lengthD2, frule inv_pair_not_eqD, auto)
     done
   subgoal
-    apply (frule inv_pair_lengthD1)
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def update2_def lookup1_def lookup2_def get_k1_def get_k2_def mem_update_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (frule inv_pair_lengthD1, frule inv_pair_lengthD2, frule inv_pair_not_eqD, auto)
     done
   subgoal
-    apply (frule inv_pair_lengthD2)
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def update2_def lookup1_def lookup2_def get_k1_def get_k2_def mem_update_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (frule inv_pair_lengthD1, frule inv_pair_lengthD2, frule inv_pair_not_eqD, auto)
     done
   subgoal
-    apply (frule inv_pair_lengthD2)
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def update2_def lookup1_def lookup2_def get_k1_def get_k2_def mem_update_def mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (frule inv_pair_lengthD1, frule inv_pair_lengthD2, frule inv_pair_not_eqD, auto)
     done
   subgoal
-    apply (frule inv_pair_lengthD1)
-    apply (frule inv_pair_lengthD2)
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def update2_def Memory_Heap.lookup1_def lookup2_def get_k1_def get_k2_def mem_update_def Memory_Heap.mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (frule inv_pair_lengthD1, frule inv_pair_lengthD2, frule inv_pair_not_eqD, auto)
     using injective
     apply (subst (asm) nth_list_update_neq)
     by auto
  subgoal
-    apply (frule inv_pair_lengthD1)
-    apply (frule inv_pair_lengthD2)
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def update2_def Memory_Heap.lookup1_def Memory_Heap.lookup2_def get_k1_def get_k2_def mem_update_def Memory_Heap.mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (frule inv_pair_lengthD1, frule inv_pair_lengthD2, frule inv_pair_not_eqD, auto)
     using injective
     apply (subst (asm) nth_list_update_neq)
     by auto
   subgoal
-    apply (frule inv_pair_lengthD1)
-    apply (frule inv_pair_lengthD2)
-    apply (frule inv_pair_not_eqD)
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def update2_def Memory_Heap.lookup1_def Memory_Heap.lookup2_def get_k1_def get_k2_def mem_update_def Memory_Heap.mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-      dest: Array.noteq_sym
-    )
+    apply (frule inv_pair_lengthD1, frule inv_pair_lengthD2, frule inv_pair_not_eqD,
+           auto dest: dest: Array.noteq_sym
+          )
     done
    subgoal for m k' v
-    apply (frule inv_pair_lengthD1)
-     apply (frule inv_pair_lengthD2)
-     apply (frule inv_pair_not_eqD)
-    apply (auto simp:
-      move12_def mem_empty_def mem_defs.map_of_def map_le_def update1_def update2_def Memory_Heap.lookup1_def Memory_Heap.lookup2_def get_k1_def get_k2_def mem_update_def Memory_Heap.mem_lookup_def
-      execute_bind_success[OF success_newI] execute_simps Let_def Array.get_alloc length_def
-      simp: inv_pair_presentD inv_pair_presentD2 
-      intro: alloc_present alloc_present'
-      split: if_split_asm
-    )
+    apply (frule inv_pair_lengthD1, frule inv_pair_lengthD2, frule inv_pair_not_eqD, auto)
      done
    done
 
