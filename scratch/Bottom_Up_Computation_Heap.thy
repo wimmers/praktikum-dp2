@@ -29,11 +29,6 @@ end (* Iterator *)
 context dp_heap
 begin
 
-interpretation state: mem_correct lookup' update' P
-  by (rule mem_correct_heap)
-
-interpretation state: dp_consistency lookup' update' P dp ..
-
 context
   includes lifting_syntax
   fixes cnt :: "'a \<Rightarrow> bool" and nxt :: "'a \<Rightarrow> 'a"
