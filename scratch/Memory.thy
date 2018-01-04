@@ -281,57 +281,58 @@ proof (standard, goal_cases)
   show ?case
     unfolding lookup_pair_def Let_def
     by (auto 4 4
-        intro!: lift_pI split: pair_storage.split_asm if_split_asm prod.split_asm
-        simp: bind_def runState_return dest: get_state inv_pair_lookup1 inv_pair_lookup2
+        intro!: lift_pI
+        dest: get_state inv_pair_lookup1 inv_pair_lookup2
+        simp: bind_def runState_return
+        split: pair_storage.split_asm if_split_asm prod.split_asm
         )
 next
   case (2 k v) -- "Update invariant"
   show ?case
     unfolding update_pair_def Let_def
     apply (auto 4 4
-        intro!: lift_pI split: pair_storage.split_asm if_split_asm prod.split_asm
-        simp: bind_def get_state runState_return dest: get_state intro: inv_pair_update1 inv_pair_update2
+        intro!: lift_pI intro: inv_pair_update1 inv_pair_update2
+        dest: get_state
+        simp: bind_def get_state runState_return
+        split: pair_storage.split_asm if_split_asm prod.split_asm
         )+
-    apply (rule inv_pair_update1, assumption)
-     apply (rule inv_pair_move12, assumption)
-      apply (auto dest: get_state; fail)
-     apply (subst get_state, assumption)
-     apply (subst get_state, assumption)
-    by (auto intro: move12_keys)
+    apply (elim inv_pair_update1 inv_pair_move12)
+      apply (((subst get_state, assumption)+)?, auto intro: move12_keys dest: get_state; fail)+
+    done
 next
   case (3 m k)
   {
-    have "pair.map_of (snd (runState (lookup2 (key2 k)) m)) \<subseteq>\<^sub>m pair.map_of m"
+    let ?m = "snd (runState (lookup2 (key2 k)) m)"
+    have "map_of1 ?m \<subseteq>\<^sub>m map_of1 m"
+      by (smt 3 domIff inv_pair_P_D local.lookup_keys lookup_correct map_le_def map_of1_def surjective_pairing)
+    moreover have "map_of2 ?m \<subseteq>\<^sub>m map_of2 m"
+      by (smt 3 domIff inv_pair_P_D local.lookup_keys lookup_correct map_le_def map_of2_def surjective_pairing)
+    moreover have "dom (map_of1 ?m) \<inter> dom (map_of2 m) = {}"
+      using 3 \<open>map_of1 ?m \<subseteq>\<^sub>m map_of1 m\<close> inv_pair_domD map_le_implies_dom_le by fastforce
+    moreover have "inv_pair ?m"
+      using 3 inv_pair_lookup2 surjective_pairing by metis
+    ultimately have "pair.map_of ?m \<subseteq>\<^sub>m pair.map_of m"
       apply (subst map_of_eq_pair[symmetric])
        defer
        apply (subst map_of_eq_pair[symmetric])
-        apply (rule 3)
-       apply (rule map_add_mono)
-      subgoal
-        by (smt 3 domD domI inv_pair_P_D local.lookup_keys lookup_correct map_le_def map_of1_def surjective_pairing)
-      subgoal
-        by (smt 3 domD domI inv_pair_P_D local.lookup_keys(4) lookup_correct(4) map_le_def map_of2_def surjective_pairing)
-      subgoal
-        using 3 \<open>map_of1 (snd (runState (lookup2 (key2 k)) m)) \<subseteq>\<^sub>m map_of1 m\<close> inv_pair_domD map_le_implies_dom_le by fastforce
-      subgoal
-        using 3 inv_pair_lookup2 surjective_pairing by blast
-      done
+      by (auto intro: 3 map_add_mono)
   }
   moreover
-  { have "pair.map_of (snd (runState (lookup1 (key2 k)) m)) \<subseteq>\<^sub>m pair.map_of m"
+  {
+    let ?m = "snd (runState (lookup1 (key2 k)) m)"
+    have "map_of1 ?m \<subseteq>\<^sub>m map_of1 m"
+      by (smt 3 domIff inv_pair_P_D local.lookup_keys lookup_correct map_le_def map_of1_def surjective_pairing)
+    moreover have "map_of2 ?m \<subseteq>\<^sub>m map_of2 m"
+      by (smt 3 domIff inv_pair_P_D local.lookup_keys lookup_correct map_le_def map_of2_def surjective_pairing)
+    moreover have "dom (map_of1 ?m) \<inter> dom (map_of2 m) = {}"
+      using 3 \<open>map_of1 ?m \<subseteq>\<^sub>m map_of1 m\<close> inv_pair_domD map_le_implies_dom_le by fastforce
+    moreover have "inv_pair ?m"
+      using 3 inv_pair_lookup1 surjective_pairing by metis
+    ultimately have "pair.map_of ?m \<subseteq>\<^sub>m pair.map_of m"
       apply (subst map_of_eq_pair[symmetric])
        defer
        apply (subst map_of_eq_pair[symmetric])
-        apply (rule 3)
-       apply (rule map_add_mono)
-      subgoal
-        by (smt 3 domD domI inv_pair_P_D lookup_keys lookup_correct map_le_def map_of1_def map_of2_def surjective_pairing)
-        apply (smt 3 domD domI inv_pair_P_D lookup_keys lookup_correct map_le_def map_of1_def map_of2_def surjective_pairing)
-      subgoal
-        using 3 \<open>map_of1 (snd (runState (lookup1 (key2 k)) m)) \<subseteq>\<^sub>m map_of1 m\<close> inv_pair_domD map_le_implies_dom_le by fastforce
-      subgoal
-        using 3 inv_pair_lookup1 surjective_pairing by blast
-      done
+      by (auto intro: 3 map_add_mono)
   }
   ultimately show ?case
     by (auto
@@ -340,53 +341,106 @@ next
         )
 next
   case prems: (4 m k v)
+  let ?m1 = "snd (runState (update1 (key2 k) v) m)"
+  let ?m2 = "snd (runState (update2 (key2 k) v) m)"
+  from prems have disjoint: "dom (map_of1 m) \<inter> dom (map_of2 m) = {}"
+    by (simp add: inv_pair_domD)
   show ?case
-    apply (auto split: pair_storage.split if_split prod.split simp: Let_def update_pair_def bind_def runState_return dest: get_state intro: map_le_refl)
+    apply (auto
+        intro: map_le_refl dest: get_state
+        split: pair_storage.split if_split prod.split
+        simp: Let_def update_pair_def bind_def runState_return
+        )
   proof goal_cases
-    case (1 x2)
-    then show ?case
+    case (1 m')
+    then have "m' = m"
+      by (rule get_state)
+    from 1 prems have "map_of1 ?m1 \<subseteq>\<^sub>m map_of1 m(k \<mapsto> v)"
+      by (smt inv_pair_P_D map_le_def map_of1_def surjective_pairing domIff
+          fst_conv fun_upd_apply injective update_correct update_keys
+          )
+    moreover from prems have "map_of2 ?m1 \<subseteq>\<^sub>m map_of2 m"
+      by (smt domIff inv_pair_P_D update_correct update_keys map_le_def map_of2_def surjective_pairing)
+    moreover from prems have "dom (map_of1 ?m1) \<inter> dom (map_of2 m) = {}"
+      by (smt inv_pair_P_D[OF \<open>inv_pair m\<close>] domIff Int_emptyI eq_snd_iff inv_pair_neq 
+          map_of1_def map_of2_def update_keys(1)
+          )
+    moreover from 1 prems have "k \<notin> dom (map_of2 m)"
+      using inv_pair_neq map_of2_def by fastforce
+    moreover from 1 prems have "inv_pair ?m1"
+      using inv_pair_update1 fst_conv surjective_pairing by metis
+    ultimately show "pair.map_of (snd (runState (update1 (key2 k) v) m')) \<subseteq>\<^sub>m pair.map_of m(k \<mapsto> v)"
+      unfolding \<open>m' = m\<close> using disjoint
       apply (subst map_of_eq_pair[symmetric])
        defer
-       apply (subst map_of_eq_pair[symmetric])
-        apply (rule prems)
+       apply (subst map_of_eq_pair[symmetric], rule prems)
        apply (subst map_add_upd2[symmetric])
-         prefer 3
-         apply (rule map_add_mono)
-      subgoal
-        by (smt domIff fst_conv fun_upd_apply get_state(1) injective inv_pair_P_D map_le_def pair_mem_defs.map_of1_def prems surjective_pairing update_correct(1) update_keys(1))
-      subgoal
-        by (smt domIff get_state(1) inv_pair_P_D map_le_def pair_mem_defs.map_of2_def prems surjective_pairing update_correct(3) update_keys(2))
-      subgoal
-        by (smt inv_pair_P_D[OF \<open>inv_pair m\<close>] Int_emptyI domIff eq_snd_iff get_state(1) inv_pair_neq map_of2_def pair_mem_defs.map_of1_def prems update_keys(1))
-      subgoal
-        by (simp add: inv_pair_domD prems)
-      subgoal
-        using inv_pair_neq map_of2_def prems by fastforce
-      subgoal
-        by (metis fst_conv get_state(1) inv_pair_update1 prems surjective_pairing)
-      done
+      by (auto intro: map_add_mono)
   next
-    case (2 x1 x2 x2a)
-    then show ?case
+    case (2 k1 m' m'')
+    then have "m' = m" "m'' = m"
+      by (auto dest: get_state)
+    from 2 prems have "map_of2 ?m2 \<subseteq>\<^sub>m map_of2 m(k \<mapsto> v)"
+      unfolding \<open>m' = m\<close> \<open>m'' = m\<close>
+      by (smt inv_pair_P_D map_le_def map_of2_def surjective_pairing domIff
+          fst_conv fun_upd_apply injective update_correct update_keys
+          )
+    moreover from prems have "map_of1 ?m2 \<subseteq>\<^sub>m map_of1 m"
+      by (smt domIff inv_pair_P_D update_correct update_keys map_le_def map_of1_def surjective_pairing)
+    moreover from 2 have "dom (map_of1 ?m2) \<inter> dom (map_of2 m(k \<mapsto> v)) = {}"
+      unfolding \<open>m' = m\<close>
+      by (smt domIff \<open>map_of1 ?m2 \<subseteq>\<^sub>m map_of1 m\<close> disjoint_iff_not_equal fst_conv fun_upd_apply
+          map_le_def map_of1_def map_of2_def
+          )
+    moreover from 2 prems have "inv_pair ?m2"
+      unfolding \<open>m' = m\<close>
+      using inv_pair_update2 fst_conv surjective_pairing by metis
+    ultimately show "pair.map_of (snd (runState (update2 (key2 k) v) m'')) \<subseteq>\<^sub>m pair.map_of m(k \<mapsto> v)"
+      unfolding \<open>m' = m\<close> \<open>m'' = m\<close>
       apply (subst map_of_eq_pair[symmetric])
        defer
-       apply (subst map_of_eq_pair[symmetric])
-        apply (rule prems)
+       apply (subst map_of_eq_pair[symmetric], rule prems)
        apply (subst map_add_upd[symmetric])
-       apply (rule map_add_mono)
-      subgoal
-        by (smt domIff fst_conv fun_upd_apply get_state injective inv_pair_P_D map_le_def pair_mem_defs.map_of1_def prems surjective_pairing update_correct update_keys)
-      subgoal
-        by (smt domD domI fst_conv get_state(1) get_state(2) injective inv_pair_P_D map_le_def map_upd_Some_unfold pair_mem_defs.map_of2_def prems surjective_pairing update_correct(2) update_keys(4))
-      subgoal
-        by (smt \<open>\<lbrakk>key1 k \<noteq> x1; runState get_k2 x2 = (key1 k, x2a); runState get_k1 m = (x1, x2)\<rbrakk> \<Longrightarrow> map_of1 (snd (runState (update2 (key2 k) v) x2a)) \<subseteq>\<^sub>m map_of1 m\<close> disjoint_iff_not_equal domIff fst_conv fun_upd_apply get_state(1) map_le_def map_of1_def pair_mem_defs.map_of2_def)
-      subgoal
-        by (metis fst_conv get_state inv_pair_update2 prems surjective_pairing)
-      done
-
+      by (rule map_add_mono)
   next
-    case (3 x1 x2 x1a x2a x2b)
-    then show ?case
+    case (3 k1 m1 k2 m2 m3)
+    then have "m1 = m" "m2 = m"
+      by (auto dest: get_state)
+    let ?m3 = "snd (runState (update1 (key2 k) v) m3)"
+    from 3 prems have "map_of1 ?m3 \<subseteq>\<^sub>m map_of2 m(k \<mapsto> v)"
+      unfolding \<open>m2 = m\<close>
+      by (smt inv_pair_P_D map_le_def map_of1_def surjective_pairing domIff
+          fst_conv fun_upd_apply injective
+          inv_pair_move12 move12_correct move12_keys update_correct update_keys
+          )
+    moreover have "map_of2 ?m3 \<subseteq>\<^sub>m map_of1 m"
+    proof -
+      from prems 3 have "P m" "P m3"
+        unfolding \<open>m1 = m\<close> \<open>m2 = m\<close>
+        using inv_pair_P_D[OF prems] by (auto elim: lift_p_P[OF move12_inv])
+      from 3(3)[unfolded \<open>m2 = m\<close>] have "mem2.map_of ?m3 \<subseteq>\<^sub>m mem1.map_of m"
+        by - (erule map_le_trans[OF update_correct(3)[OF \<open>P m3\<close>] move12_correct(2)[OF \<open>P m\<close>]])
+      with 3 prems show ?thesis
+        unfolding \<open>m1 = m\<close> \<open>m2 = m\<close> map_le_def map_of2_def
+        apply auto
+        apply (frule move12_keys(2), simp)
+        by (metis
+            domI inv_pair_def map_of1_def surjective_pairing
+            inv_pair_move12 move12_keys(2) update_keys(2)
+            )
+    qed
+    moreover from prems 3 have "dom (map_of1 ?m3) \<inter> dom (map_of1 m) = {}"
+      unfolding \<open>m1 = m\<close> \<open>m2 = m\<close>
+      by (smt inv_pair_P_D disjoint_iff_not_equal map_of1_def surjective_pairing domIff
+          fst_conv inv_pair_move12 move12_keys update_keys
+          )
+    moreover from 3 have "k \<notin> dom (map_of1 m)"
+      by (simp add: domIff map_of1_def)
+    moreover from 3 prems have "inv_pair ?m3"
+      unfolding \<open>m2 = m\<close>
+      by (metis inv_pair_move12 inv_pair_update1 move12_keys(1) fst_conv surjective_pairing)
+    ultimately show ?case
+      unfolding \<open>m1 = m\<close> \<open>m2 = m\<close> using disjoint
       apply (subst map_of_eq_pair[symmetric])
        defer
        apply (subst map_of_eq_pair[symmetric])
@@ -394,33 +448,7 @@ next
        apply (subst (2) map_add_comm)
         defer
         apply (subst map_add_upd2[symmetric])
-          prefer 3
-          apply (rule map_add_mono)
-      subgoal
-        by (smt domIff fst_conv fun_upd_apply get_state(1) get_state(2) injective inv_pair_P_D inv_pair_move12 map_le_def move12_correct(1) move12_keys(1) pair_mem_defs.map_of1_def prems surjective_pairing update_correct(1) update_keys(1))
-      subgoal
-        apply (frule get_state)
-        apply (frule get_state(2))
-        apply simp
-        apply (frule map_le_trans[OF update_correct(3) move12_correct(2), of _ m "key1 k" _ "key2 k" v, rotated 2])
-        using inv_pair_P_D[OF prems] apply (erule lift_p_P[OF move12_inv])
-         apply (rule inv_pair_P_D[OF prems])
-        subgoal
-          unfolding map_le_def map_of2_def
-          apply auto
-          apply (frule move12_keys(2), simp)
-          by (metis domI inv_pair_def inv_pair_move12 map_of1_def move12_keys(2) prems surjective_pairing update_keys(2))
-        done
-      subgoal
-        by (smt disjoint_iff_not_equal domIff fst_conv get_state(1) get_state(2) inv_pair_P_D inv_pair_move12 move12_keys(1) pair_mem_defs.map_of1_def prems surjective_pairing update_keys(1))
-      subgoal
-        using inv_pair_domD[OF prems] by blast
-      subgoal
-        by (simp add: domIff map_of1_def)
-      subgoal
-        by (smt fst_conv get_state(1) get_state(2) inv_pair_move12 inv_pair_update1 move12_keys(1) prems surjective_pairing)
-      subgoal
-        by (simp add: inv_pair_domD prems)
+          apply (auto intro: map_add_mono)
       done
   qed
 qed
